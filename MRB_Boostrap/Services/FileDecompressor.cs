@@ -49,8 +49,10 @@ public sealed class FileDecompressor : IFileDecompressor
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
+                // No output means the inflater is finished or cannot progress (out of input, or waiting
+                // for a preset dictionary this format never uses); retrying would spin forever.
                 int count = inflater.Inflate(buffer);
-                if (count == 0 && inflater.IsNeedingInput)
+                if (count == 0)
                     break;
 
                 uncompressed.Write(buffer, 0, count);
