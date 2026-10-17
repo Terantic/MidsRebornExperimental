@@ -72,14 +72,17 @@ namespace Mids_Reborn.UI.Forms.ImportExportItems
 
         private async void RefreshSelectedBuild_Click(object sender, EventArgs e)
         {
-            if (_selectedBuild == null) return;
-            var refreshResult = await ShareClient.RefreshShare(_selectedBuild.Id!);
+            // The selection can change while the request is out; the result belongs to the build it was sent for
+            var build = _selectedBuild;
+            if (build == null) return;
+            var refreshResult = await ShareClient.RefreshShare(build.Id!);
             if (refreshResult.IsSuccessful)
             {
                 toolStripStatusLabel1.Text = refreshResult.Message;
                 if (refreshResult.Data is null) return;
-                _selectedBuild.ExpiresAt = refreshResult.Data?.ExpiresAt;
-                _collection?.Update(_selectedBuild);
+                build.ExpiresAt = refreshResult.Data?.ExpiresAt;
+                _collection?.Update(build);
+                if (_selectedBuild == build) SetControlText(txtExpiresOn, build.ExpiresAt);
             }
             else
             {
