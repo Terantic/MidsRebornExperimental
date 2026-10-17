@@ -3696,10 +3696,9 @@ namespace Mids_Reborn
             {
                 Plain = true, idFormat = 0
             }.Build("") + "\r\n\r\n";
-            StreamWriter streamWriter;
             try
             {
-                streamWriter = new StreamWriter(iFileName, false);
+                FileIO.WriteAllTextAtomic(iFileName, str2 + saveText);
             }
             catch (Exception ex)
             {
@@ -3707,9 +3706,6 @@ namespace Mids_Reborn
                 return false;
             }
 
-            streamWriter.Write(str2);
-            streamWriter.Write(saveText);
-            streamWriter.Close();
             return true;
         }
 

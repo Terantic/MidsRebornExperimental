@@ -1754,14 +1754,15 @@ namespace Mids_Reborn.UI.Forms
             }
 
             var fileInfo = new FileInfo(LastFileName);
-            switch (fileInfo.Extension)
+            var fileName = LastFileName;
+            switch (fileInfo.Extension.ToLowerInvariant())
             {
                 case ".mxd" or ".txt":
-                    var fileName = LastFileName.Replace(fileInfo.Extension, ".mbd");
-                    LastFileName = fileName;
+                    fileName = LastFileName.Replace(fileInfo.Extension, ".mbd");
                     break;
             }
-            if (!_buildManager.SaveToFile(LastFileName)) return false;
+            if (!_buildManager.SaveToFile(fileName)) return false;
+            LastFileName = fileName;
             MidsContext.Config.LastFileName = LastFileName;
             FileModified = false;
             SetTitleBar();
@@ -1795,6 +1796,18 @@ namespace Mids_Reborn.UI.Forms
             {
                 var buildFile = DlgSave.FileName;
                 var extension = Path.GetExtension(buildFile).ToUpperInvariant();
+                if (extension is not (".MBD" or ".MXD"))
+                {
+                    // Only .mbd and .mxd can be written: keep the typed name and add the selected type's extension
+                    extension = DlgSave.FilterIndex == 2 ? ".MXD" : ".MBD";
+                    buildFile += extension.ToLowerInvariant();
+                    if (File.Exists(buildFile) && MessageBox.Show($"{Path.GetFileName(buildFile)} already exists.\r\nDo you want to replace it?", @"Confirm Save As", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                    {
+                        FloatTop(true);
+                        return false;
+                    }
+                }
+
                 switch (extension)
                 {
                     case ".MBD":
@@ -1804,7 +1817,7 @@ namespace Mids_Reborn.UI.Forms
                         }
                         break;
                     case ".MXD":
-                        if (!MainModule.MidsController.Toon.Save(DlgSave.FileName))
+                        if (!MainModule.MidsController.Toon.Save(buildFile))
                         {
                             return false;
                         }

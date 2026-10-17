@@ -235,8 +235,17 @@ namespace Mids_Reborn.Core.BuildFile
                 return false;
             }
 
-            BuildData?.Update(MidsContext.Character);
-            File.WriteAllText(fileName, JsonConvert.SerializeObject(BuildData, Formatting.Indented));
+            try
+            {
+                BuildData?.Update(MidsContext.Character);
+                FileIO.WriteAllTextAtomic(fileName, JsonConvert.SerializeObject(BuildData, Formatting.Indented));
+            }
+            catch (Exception ex)
+            {
+                _notifier.ShowError($"Unable to save build to {fileName}.\r\n\r\n{ex.Message}");
+                return false;
+            }
+
             return true;
         }
 
