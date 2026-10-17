@@ -8,6 +8,8 @@ namespace Mids_Reborn.Core.Utils
 
     internal static class Compression
     {
+        // Upper bound for decompressed build data; real builds are a few KiB, so anything near this is not a build
+        internal const int MaxDecodedSize = 64 * 1024 * 1024;
 
         public static CompressionResult CompressToBase64(byte[] sourceBytes)
         {
@@ -30,7 +32,18 @@ namespace Mids_Reborn.Core.Utils
             using var compressedStream = new MemoryStream(compressedBytes);
             using var decompressionStream = new BrotliStream(compressedStream, CompressionMode.Decompress);
             using var decompressedStream = new MemoryStream();
-            decompressionStream.CopyTo(decompressedStream);
+            var buffer = new byte[81920];
+            int bytesRead;
+            while ((bytesRead = decompressionStream.Read(buffer, 0, buffer.Length)) > 0)
+            {
+                if (decompressedStream.Length + bytesRead > MaxDecodedSize)
+                {
+                    throw new InvalidDataException("Decompressed data exceeds the maximum allowed size.");
+                }
+
+                decompressedStream.Write(buffer, 0, bytesRead);
+            }
+
             var decompressedBytes = decompressedStream.ToArray();
             var outString = Encoding.UTF8.GetString(decompressedBytes);
             return new CompressionResult(outString, decompressedBytes.Length, compressedBytes.Length, base64String.Length);

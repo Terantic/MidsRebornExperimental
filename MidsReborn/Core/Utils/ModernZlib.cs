@@ -24,6 +24,12 @@ namespace Mids_Reborn.Core.Utils
 
         public static byte[] DecompressChunk(byte[] inputBytes, int destLength)
         {
+            // destLength comes from the data header, so don't trust it beyond a sane bound
+            if (destLength < 0 || destLength > Compression.MaxDecodedSize)
+            {
+                throw new InvalidDataException("Invalid decompressed size.");
+            }
+
             using var inputMemoryStream = new MemoryStream(inputBytes);
             using var outputMemoryStream = new MemoryStream();
             using (var decompressor = new ZInputStream(inputMemoryStream))
@@ -32,13 +38,22 @@ namespace Mids_Reborn.Core.Utils
                 int bytesRead;
                 while ((bytesRead = decompressor.read(buffer, 0, buffer.Length)) > 0)
                 {
+                    if (outputMemoryStream.Length + bytesRead > destLength)
+                    {
+                        throw new InvalidDataException("Decompressed data is larger than its declared size.");
+                    }
+
                     outputMemoryStream.Write(buffer, 0, bytesRead);
                 }
             }
 
-            var outputArray = outputMemoryStream.ToArray();
-            Array.Resize(ref outputArray, destLength);
-            return outputArray;
+            // Reject a size claim that doesn't match instead of padding or truncating to it
+            if (outputMemoryStream.Length != destLength)
+            {
+                throw new InvalidDataException("Decompressed data doesn't match its declared size.");
+            }
+
+            return outputMemoryStream.ToArray();
         }
 
         // Encoding and Decoding

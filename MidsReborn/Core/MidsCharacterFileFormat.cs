@@ -1207,7 +1207,15 @@ namespace Mids_Reborn.Core
 
             if (header == MagicCompressed)
             {
-                bytes = ModernZlib.DecompressChunk(bytes, Convert.ToInt32(headers[1]));
+                try
+                {
+                    bytes = ModernZlib.DecompressChunk(bytes, Convert.ToInt32(headers[1]));
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Unable to decompress data - {ex.Message}", "ExtractAndLoad Failed");
+                    return eLoadReturnCode.Failure;
+                }
             }
 
             return MxDReadSaveData(ref bytes, false) ? eLoadReturnCode.Success : eLoadReturnCode.Failure;
@@ -1319,7 +1327,14 @@ namespace Mids_Reborn.Core
 
             if (header == MagicCompressed)
             {
-                bytes = ModernZlib.DecompressChunk(bytes, Convert.ToInt32(headers[1]));
+                try
+                {
+                    bytes = ModernZlib.DecompressChunk(bytes, Convert.ToInt32(headers[1]));
+                }
+                catch (Exception)
+                {
+                    return new KeyValuePair<eLoadReturnCode, List<PowerEntry?>?>(eLoadReturnCode.Failure, null);
+                }
             }
 
             var buildReaderRet= MxDReadSaveDataLight(ref bytes);

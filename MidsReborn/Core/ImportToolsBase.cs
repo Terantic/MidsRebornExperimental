@@ -25,6 +25,8 @@ namespace Mids_Reborn.Core
         public bool HasCatalyst; // NOT FULLY IMPLEMENTED
         public string InternalName;
         public int Level;
+        public bool IsAttuned; // Attuned IO, scales with the character so it has no fixed level
+        public bool HasEnhLevel; // Level is the enhancement's own level (game build files), not the slot's
     }
 
     public class RawPowerData

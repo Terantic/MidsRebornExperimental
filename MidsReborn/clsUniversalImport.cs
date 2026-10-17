@@ -51,7 +51,7 @@ namespace Mids_Reborn
 
                 if (!((num2 > -1) & (startIndex > -1)))
                     continue;
-                Array.Copy(sPowerLine.Slots, new sSlot[sPowerLine.Slots.Length + 1], sPowerLine.Slots.Length + 1);
+                Array.Resize(ref sPowerLine.Slots, sPowerLine.Slots.Length + 1);
                 //sPowerLine.Slots = (sSlot[]) Utils.CopyArray(sPowerLine.Slots, new sSlot[sPowerLine.Slots.Length + 1]);
                 sPowerLine.Slots[^1].Enh = iStr.Substring(0, num2).Trim();
                 sPowerLine.Slots[^1].Level = Convert.ToInt32(iStr.Substring(startIndex).Trim());
@@ -280,7 +280,7 @@ namespace Mids_Reborn
                     if (!((iPL.Level > 0) & (iPL.Power != "")))
                         continue;
                     //sPowerLineArray = (sPowerLine[]) Utils.CopyArray(sPowerLineArray, new sPowerLine[sPowerLineArray.Length + 1]);
-                    Array.Copy(sPowerLineArray, new sPowerLine[sPowerLineArray.Length + 1], sPowerLineArray.Length + 1);
+                    Array.Resize(ref sPowerLineArray, sPowerLineArray.Length + 1);
                     sPowerLineArray[^1].Assign(iPL);
                 }
 
@@ -596,7 +596,7 @@ namespace Mids_Reborn
                     if (num2 <= -1)
                         continue;
                     //strArray = (string[]) Utils.CopyArray(strArray, new string[strArray.Length + 1]);
-                    Array.Copy(strArray, new string[strArray.Length + 1], strArray.Length + 1);
+                    Array.Resize(ref strArray, strArray.Length + 1);
                     strArray[^1] = start <= -1
                         ? haystack[index1].Substring(num2).Trim()
                         : haystack[index1].Substring(num2, start - num2).Trim();

@@ -46,26 +46,18 @@ namespace Mids_Reborn.Core.BuildFile
                 return new LoadFileResult { BuildData = null, ErrorMsg = "Specified file doesn't exist." };
             }
 
-            var data = File.ReadAllText(fileName);
+            // Previews only; never replace the active build data here
+            CharacterBuildData buildData;
             try
             {
-                var settings = new JsonSerializerSettings
-                {
-                    Converters = new List<JsonConverter> { new EnhancementDataConverter() }
-                };
-                BuildData = JsonConvert.DeserializeObject<CharacterBuildData>(data, settings) ?? throw new InvalidOperationException();
+                buildData = Deserialize(File.ReadAllText(fileName));
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return new LoadFileResult { BuildData = null, ErrorMsg = "Unable to load build from file." };
             }
 
-            if (BuildData is null)
-            {
-                return new LoadFileResult { BuildData = null, ErrorMsg = "Unable to read build data." };
-            }
-
-            var metaData = BuildData.BuiltWith;
+            var metaData = buildData.BuiltWith;
             if (metaData == null)
             {
                 return new LoadFileResult { BuildData = null, ErrorMsg = "Unable to read metadata." };
@@ -76,34 +68,65 @@ namespace Mids_Reborn.Core.BuildFile
                 return new LoadFileResult { BuildData = null, ErrorMsg = $"This build has been made with {metaData.Database} and doesn't match current database ({DatabaseAPI.DatabaseName})." };
             }
 
-            return new LoadFileResult { BuildData = BuildData, ErrorMsg = null };
+            return new LoadFileResult { BuildData = buildData, ErrorMsg = null };
         }
-        
-        public bool LoadFromFile(string? fileName)
-        {
-            if (string.IsNullOrWhiteSpace(fileName)) return false;
-            var returnedVal = false;
-            var data = File.ReadAllText(fileName);
-            try
-            {
-                var settings = new JsonSerializerSettings
-                {
-                    Converters = new List<JsonConverter>{ new EnhancementDataConverter() }
-                };
-                BuildData = JsonConvert.DeserializeObject<CharacterBuildData>(data, settings) ?? throw new InvalidOperationException();
-            }
-            catch (Exception ex)
-            {
-                _notifier.ShowError(ex.Message);
-            }
 
-            if (BuildData is null)
+        private static CharacterBuildData Deserialize(string data)
+        {
+            var settings = new JsonSerializerSettings
             {
-                _notifier.ShowError($"Cannot load {fileName} - error reading build data.\r\n\r\n{nameof(BuildData)}");
+                Converters = new List<JsonConverter> { new EnhancementDataConverter() }
+            };
+
+            return JsonConvert.DeserializeObject<CharacterBuildData>(data, settings) ?? throw new InvalidOperationException("No build data found.");
+        }
+
+        /// <summary>
+        /// Validates the candidate build, lets the caller confirm and clear the active build (beforeLoad), then loads it.
+        /// Nothing is changed when validation fails or beforeLoad returns false.
+        /// </summary>
+        private bool CommitBuild(CharacterBuildData buildData, string? id, Func<bool>? beforeLoad)
+        {
+            if (!buildData.ValidateForLoad(out var error))
+            {
+                _notifier.ShowError($"Cannot load build - {error}");
                 return false;
             }
 
-            var metaData = BuildData.BuiltWith;
+            if (beforeLoad != null && !beforeLoad())
+            {
+                return false;
+            }
+
+            BuildData = buildData;
+            BuildData.Id = id;
+            return BuildData.LoadBuild();
+        }
+
+        /// <summary>
+        /// Forget the remote share id, for when the active build is replaced by one that wasn't fetched from the share service.
+        /// </summary>
+        public void ClearShareId()
+        {
+            if (BuildData != null) BuildData.Id = null;
+        }
+
+        public bool LoadFromFile(string? fileName, Func<bool>? beforeLoad = null)
+        {
+            if (string.IsNullOrWhiteSpace(fileName)) return false;
+            var returnedVal = false;
+            CharacterBuildData buildData;
+            try
+            {
+                buildData = Deserialize(File.ReadAllText(fileName));
+            }
+            catch (Exception ex)
+            {
+                _notifier.ShowError($"Cannot load {fileName} - error reading build data.\r\n\r\n{ex.Message}");
+                return false;
+            }
+
+            var metaData = buildData.BuiltWith;
             if (metaData == null)
             {
                 _notifier.ShowError($"Cannot load {fileName} - error reading build metadata.\r\n\r\n{nameof(metaData)}");
@@ -189,12 +212,12 @@ namespace Mids_Reborn.Core.BuildFile
 
                     if (continueLoad)
                     {
-                        returnedVal = BuildData.LoadBuild();
+                        returnedVal = CommitBuild(buildData, null, beforeLoad);
                     }
                 }
                 else
                 {
-                    returnedVal = BuildData.LoadBuild();
+                    returnedVal = CommitBuild(buildData, null, beforeLoad);
                 }
             }
 
@@ -227,31 +250,22 @@ namespace Mids_Reborn.Core.BuildFile
             return BuildData != null ? BuildData.GenerateChunkData() : string.Empty;
         }
 
-        private bool LoadShareData(string? data, string? id = null)
+        private bool LoadShareData(string? data, string? id = null, Func<bool>? beforeLoad = null)
         {
             if (string.IsNullOrWhiteSpace(data)) return false;
             var returnedVal = false;
+            CharacterBuildData buildData;
             try
             {
-                var settings = new JsonSerializerSettings
-                {
-                    Converters = new List<JsonConverter>{ new EnhancementDataConverter() }
-                };
-                BuildData = JsonConvert.DeserializeObject<CharacterBuildData>(data, settings) ?? throw new InvalidOperationException();
-                if (id is not null) BuildData.Id = id;
+                buildData = Deserialize(data);
             }
             catch (Exception ex)
             {
-                _notifier.ShowError(ex.Message);
-            }
-
-            if (BuildData is null)
-            {
-                _notifier.ShowError($"Cannot load share data - An error occurred during reading build data.\r\n\r\n{nameof(BuildData)}");
+                _notifier.ShowError($"Cannot load share data - An error occurred during reading build data.\r\n\r\n{ex.Message}");
                 return false;
             }
 
-            var metaData = BuildData.BuiltWith;
+            var metaData = buildData.BuiltWith;
             if (metaData == null)
             {
                 _notifier.ShowError($"Cannot load share data - An error occurred during reading build metadata.\r\n\r\n{nameof(metaData)}");
@@ -294,18 +308,18 @@ namespace Mids_Reborn.Core.BuildFile
 
                 if (continueLoad)
                 {
-                    returnedVal = BuildData.LoadBuild();
+                    returnedVal = CommitBuild(buildData, id, beforeLoad);
                 }
             }
             else
             {
-                returnedVal = BuildData.LoadBuild();
+                returnedVal = CommitBuild(buildData, id, beforeLoad);
             }
 
             return returnedVal;
         }
 
-        public bool ValidateAndLoadImportData(DataClassifier.ClassificationResult classificationResult)
+        public bool ValidateAndLoadImportData(DataClassifier.ClassificationResult classificationResult, Func<bool>? beforeLoad = null)
         {
             if (!classificationResult.IsValid)
             {
@@ -336,12 +350,8 @@ namespace Mids_Reborn.Core.BuildFile
                         return false;
                     }
 
-                    try
-                    {
-                        uncompressedSize = int.Parse(headerItems[1]);
-                        compressedSize = int.Parse(headerItems[2]);
-                    }
-                    catch (FormatException)
+                    if (!int.TryParse(headerItems[1], out uncompressedSize) || !int.TryParse(headerItems[2], out compressedSize) ||
+                        uncompressedSize < 0 || compressedSize < 0)
                     {
                         _notifier.ShowError("Header contains invalid size information.");
                         return false;
@@ -376,7 +386,23 @@ namespace Mids_Reborn.Core.BuildFile
                         return false;
                     }
 
-                    decodedBytes = ModernZlib.DecompressChunk(decodedBytes, uncompressedSize);
+                    try
+                    {
+                        decodedBytes = ModernZlib.DecompressChunk(decodedBytes, uncompressedSize);
+                    }
+                    catch (Exception ex)
+                    {
+                        _notifier.ShowError($"Unable to decompress build data.\r\n\r\n{ex.Message}");
+                        return false;
+                    }
+
+                    if (beforeLoad != null && !beforeLoad())
+                    {
+                        return false;
+                    }
+
+                    // Legacy data is read straight into the character, it has no share id
+                    ClearShareId();
                     // Now use the decompressed bytes with the MxDReadSaveData method
                     var loadSuccess = MidsCharacterFileFormat.MxDReadSaveData(ref decodedBytes, false);
                     return loadSuccess;
@@ -389,11 +415,30 @@ namespace Mids_Reborn.Core.BuildFile
                         return false;
                     }
 
+                    CompressionResult decoded;
+                    try
+                    {
+                        decoded = Compression.DecompressFromBase64(data);
+                    }
+                    catch (Exception ex)
+                    {
+                        _notifier.ShowError($"Unable to decompress build data.\r\n\r\n{ex.Message}");
+                        return false;
+                    }
 
-                    var decoded = Compression.DecompressFromBase64(data);
-                    if (decoded.CompressedSize == compressedSize) return LoadShareData(decoded.OutString);
-                    _notifier.ShowError("Compressed size mismatch.");
-                    return false;
+                    if (decoded.CompressedSize != compressedSize)
+                    {
+                        _notifier.ShowError("Compressed size mismatch.");
+                        return false;
+                    }
+
+                    if (decoded.UncompressedSize != uncompressedSize)
+                    {
+                        _notifier.ShowError("Uncompressed size mismatch.");
+                        return false;
+                    }
+
+                    return LoadShareData(decoded.OutString, null, beforeLoad);
                 case DataClassifier.DataType.UnkBase64:
                     if (!Regex.IsMatch(data, @"^[a-zA-Z0-9\+/]*={0,3}$", RegexOptions.None))
                     {
@@ -401,16 +446,18 @@ namespace Mids_Reborn.Core.BuildFile
                         return false;
                     }
 
+                    CompressionResult unkDecoded;
                     try
                     {
-                        var unkDecoded = Compression.DecompressFromBase64(data);
-                        return LoadShareData(unkDecoded.OutString);
+                        unkDecoded = Compression.DecompressFromBase64(data);
                     }
                     catch (Exception)
                     {
                         _notifier.ShowError("An unknown error occurred.");
                         return false;
                     }
+
+                    return LoadShareData(unkDecoded.OutString, null, beforeLoad);
                 case DataClassifier.DataType.Unknown:
                     break;
                 default:
@@ -421,15 +468,26 @@ namespace Mids_Reborn.Core.BuildFile
             return false;
         }
 
-        public bool ValidateAndLoadSchemaData(string data, string? id = null)
+        public bool ValidateAndLoadSchemaData(string data, string? id = null, Func<bool>? beforeLoad = null)
         {
             if (!Regex.IsMatch(data, @"^[a-zA-Z0-9\+/]*={0,3}$", RegexOptions.None))
             {
                 _notifier.ShowError("Data is not valid BASE64.");
                 return false;
             }
-            var decoded = Compression.DecompressFromBase64(data);
-            return LoadShareData(decoded.OutString, id);
+
+            CompressionResult decoded;
+            try
+            {
+                decoded = Compression.DecompressFromBase64(data);
+            }
+            catch (Exception ex)
+            {
+                _notifier.ShowError($"Unable to decompress build data.\r\n\r\n{ex.Message}");
+                return false;
+            }
+
+            return LoadShareData(decoded.OutString, id, beforeLoad);
         }
     }
 }
