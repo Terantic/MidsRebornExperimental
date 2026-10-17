@@ -116,9 +116,10 @@ namespace Mids_Reborn.Core
             return uncapped ? _character.Totals.Res[dType] * 100f : _character.TotalsCapped.Res[dType] * 100f;
         }
 
-        public float DamageResistanceMin => _character.Totals.Res.Min() * 100f;
-        public float DamageResistanceMax => _character.Totals.Res.Max() * 100f;
-        public float DamageResistanceAvg => _character.Totals.Res.Average() * 100f;
+        // Only the real resistance/defense vectors; the other eDamage slots would drag min and average down
+        public float DamageResistanceMin => CustomGraphStat.ResistanceVectors.Min(d => _character.Totals.Res[(int)d]) * 100f;
+        public float DamageResistanceMax => CustomGraphStat.ResistanceVectors.Max(d => _character.Totals.Res[(int)d]) * 100f;
+        public float DamageResistanceAvg => CustomGraphStat.ResistanceVectors.Average(d => _character.Totals.Res[(int)d]) * 100f;
 
         public float Perception(bool uncapped)
         {
@@ -130,9 +131,9 @@ namespace Mids_Reborn.Core
             return _character.Totals.Def[dType] * 100f;
         }
 
-        public float DefenseMin => _character.Totals.Def.Min() * 100f;
-        public float DefenseMax => _character.Totals.Def.Max() * 100f;
-        public float DefenseAvg => _character.Totals.Def.Average() * 100f;
+        public float DefenseMin => CustomGraphStat.DefenseVectors.Min(d => _character.Totals.Def[(int)d]) * 100f;
+        public float DefenseMax => CustomGraphStat.DefenseVectors.Max(d => _character.Totals.Def[(int)d]) * 100f;
+        public float DefenseAvg => CustomGraphStat.DefenseVectors.Average(d => _character.Totals.Def[(int)d]) * 100f;
 
         public float Speed(float iSpeed, Enums.eSpeedMeasure unit)
         {

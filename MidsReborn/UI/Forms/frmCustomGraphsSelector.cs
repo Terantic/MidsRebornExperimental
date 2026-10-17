@@ -365,14 +365,16 @@ namespace Mids_Reborn.UI.Forms
                 return;
             }
 
-            if (SelectedStats == null || SelectedStats.Length < 2)
+            if (SelectedStats == null || SelectedStats.Length < 2 || SelectedSettings == null || SelectedSettings.Length != SelectedStats.Length)
             {
                 return;
             }
 
             var selectedItem = lvActiveStats.SelectedIndices[0];
 
-            (SelectedStats[lvActiveStats.SelectedIndices[0]], SelectedStats[lvActiveStats.SelectedIndices[0] - 1]) = (SelectedStats[lvActiveStats.SelectedIndices[0] - 1], SelectedStats[lvActiveStats.SelectedIndices[0]]);
+            // Each graph's settings move with it
+            (SelectedStats[selectedItem], SelectedStats[selectedItem - 1]) = (SelectedStats[selectedItem - 1], SelectedStats[selectedItem]);
+            (SelectedSettings[selectedItem], SelectedSettings[selectedItem - 1]) = (SelectedSettings[selectedItem - 1], SelectedSettings[selectedItem]);
             SelectedStatSelectedItem = selectedItem - 1;
 
             RefreshLvs();
@@ -385,19 +387,20 @@ namespace Mids_Reborn.UI.Forms
                 return;
             }
 
-            if (lvActiveStats.SelectedIndices[0] >= MidsContext.Config.CustomGraphs.Length)
+            if (SelectedStats == null || SelectedStats.Length < 2 || SelectedSettings == null || SelectedSettings.Length != SelectedStats.Length)
             {
                 return;
             }
 
-            if (SelectedStats == null || SelectedStats.Length < 2)
+            if (lvActiveStats.SelectedIndices[0] >= SelectedStats.Length - 1)
             {
                 return;
             }
 
             var selectedItem = lvActiveStats.SelectedIndices[0];
 
-            (SelectedStats[lvActiveStats.SelectedIndices[0]], SelectedStats[lvActiveStats.SelectedIndices[0] + 1]) = (SelectedStats[lvActiveStats.SelectedIndices[0] + 1], SelectedStats[lvActiveStats.SelectedIndices[0]]);
+            (SelectedStats[selectedItem], SelectedStats[selectedItem + 1]) = (SelectedStats[selectedItem + 1], SelectedStats[selectedItem]);
+            (SelectedSettings[selectedItem], SelectedSettings[selectedItem + 1]) = (SelectedSettings[selectedItem + 1], SelectedSettings[selectedItem]);
             SelectedStatSelectedItem = selectedItem + 1;
 
             RefreshLvs();
