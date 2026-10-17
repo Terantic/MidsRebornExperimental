@@ -34,6 +34,10 @@ public sealed class App
                 return;
             }
 
+            // Each entry can be cancelled until it starts installing, including after an earlier entry
+            // disabled Cancel for its own installation. Entries already installed stay installed.
+            _ui.EnableCancel();
+
             int result = await _flowManager.ExecutePatchFlowAsync(entry, cancellationToken);
             if (result != 0)
             {

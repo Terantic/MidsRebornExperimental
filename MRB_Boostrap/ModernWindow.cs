@@ -31,12 +31,14 @@ namespace MRB_Boostrap
         private const int WmUiStartCleanup = 0x0400 + 8;
         private const int WmUiCloseWindow = 0x0400 + 9;
         private const int WmUiDisableCancel = 0x0400 + 10;
+        private const int WmUiEnableCancel = 0x0400 + 11;
 
         private readonly IntPtr _hWnd;
 
         private readonly Bitmap _logoBitmap;
         private readonly Bitmap? _plasmaBitmap;
         private bool _cancelEnabled = true;
+        private bool _cancelRequested;
         private bool _cancelHover;
 
         private Rectangle _cancelRect = new(140, 330, 120, 40);
@@ -128,6 +130,7 @@ namespace MRB_Boostrap
                     if (_cancelRect.Contains(click) && _cancelEnabled)
                     {
                         _cancelEnabled = false;
+                        _cancelRequested = true;
                         _cancelHover = false;
                         _currentStatus = "Cancelling update...";
                         InvalidateRect(_hWnd, IntPtr.Zero, true);
@@ -201,6 +204,12 @@ namespace MRB_Boostrap
                 case WmUiDisableCancel:
                     _cancelEnabled = false;
                     _cancelHover = false;
+                    InvalidateRect(_hWnd, IntPtr.Zero, false);
+                    return;
+
+                case WmUiEnableCancel:
+                    // A cancel request already made stays in effect
+                    _cancelEnabled = !_cancelRequested;
                     InvalidateRect(_hWnd, IntPtr.Zero, false);
                     return;
 
@@ -480,6 +489,7 @@ namespace MRB_Boostrap
         public void PostTriggerRollback() => PostMessage(_instance?._hWnd ?? IntPtr.Zero, WmUiTriggerRollback, IntPtr.Zero, IntPtr.Zero);
         public void PostStartCleanup() => PostMessage(_instance?._hWnd ?? IntPtr.Zero, WmUiStartCleanup, IntPtr.Zero, IntPtr.Zero);
         public void PostDisableCancel() => PostMessage(_instance?._hWnd ?? IntPtr.Zero, WmUiDisableCancel, IntPtr.Zero, IntPtr.Zero);
+        public void PostEnableCancel() => PostMessage(_instance?._hWnd ?? IntPtr.Zero, WmUiEnableCancel, IntPtr.Zero, IntPtr.Zero);
         public void PostCloseWindow() => PostMessage(_instance?._hWnd ?? IntPtr.Zero, WmUiCloseWindow, IntPtr.Zero, IntPtr.Zero);
 
         private static void PostString(int msg, string value)
