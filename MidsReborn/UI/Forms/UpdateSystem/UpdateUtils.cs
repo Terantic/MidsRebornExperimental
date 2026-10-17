@@ -48,8 +48,12 @@ namespace Mids_Reborn.UI.Forms.UpdateSystem
                 return list;
             }
 
+            // A database's own manifest may only update that database. Application updates come from the
+            // official manifest alone, so when it is unavailable there is no application update.
             var externalManifest = await FetchManifest(serverUri, DatabaseAPI.DatabaseName);
-            list.AddRange(externalManifest.Updates);
+            list.AddRange(externalManifest.Updates.Where(e =>
+                e.Type == PatchType.Database &&
+                e.Name?.Equals(DatabaseAPI.DatabaseName, StringComparison.OrdinalIgnoreCase) == true));
 
             return list;
         }
