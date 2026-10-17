@@ -200,9 +200,11 @@ namespace Mids_Reborn
                             i9Slot.Grade = Enums.eEnhGrade.SingleO;
                             break;
                         case Enums.eType.InventO or Enums.eType.SetO:
-                            // Current enhancement level: p.Slots[i].Level
-                            // Set to maximum since attuned ones will give the lowest level possible.
-                            i9Slot.IOLevel = DatabaseAPI.Database.Enhancements[i9Slot.Enh].LevelMax;
+                            // Keep the imported level when the source has one (game build files).
+                            // Attuned ones (or sources without a level) are set to maximum since attuned ones will give the lowest level possible.
+                            i9Slot.IOLevel = p.Slots[i].HasEnhLevel && !p.Slots[i].IsAttuned
+                                ? DatabaseAPI.Database.Enhancements[i9Slot.Enh].CheckAndFixIOLevel(p.Slots[i].Level - 1)
+                                : DatabaseAPI.Database.Enhancements[i9Slot.Enh].LevelMax;
                             i9Slot.RelativeLevel = (Enums.eEnhRelative) (p.Slots[i].Boosters + 4);
                             break;
                     }
@@ -656,7 +658,10 @@ namespace Mids_Reborn
                         Boosters = (m3.Groups.Count > 3) & !string.IsNullOrWhiteSpace(m3.Groups[4].Value)
                             ? Convert.ToInt32(m3.Groups[4].Value, null)
                             : 0,
-                        HasCatalyst = DatabaseAPI.EnhHasCatalyst(m3.Groups[1].Value)
+                        HasCatalyst = DatabaseAPI.EnhHasCatalyst(m3.Groups[1].Value),
+                        // The base UID drops the Attuned_ prefix, so read attunement from the name in the file
+                        IsAttuned = m3.Groups[1].Value.Contains("Attuned", StringComparison.OrdinalIgnoreCase),
+                        HasEnhLevel = true
                     };
 
                     e.Level = Math.Max(e.Level, 1);

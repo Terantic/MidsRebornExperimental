@@ -21,13 +21,20 @@ public sealed class RestoreApp
         _logger = logger;
     }
 
-    public async Task RunAsync()
+    public async Task RunAsync(CancellationToken cancellationToken = default)
     {
         string target = _args.RollbackTarget!;
-        string type = target.Equals("application", StringComparison.OrdinalIgnoreCase) ? "Application" : "Database";
+
+        // "application" (or the application's display name, which update entries carry) selects the
+        // application backup; the backup file name itself comes from BackupManager.ApplicationBackupName.
+        bool isApplication = target.Equals("application", StringComparison.OrdinalIgnoreCase) ||
+                             target.Equals(BackupManager.ApplicationBackupName, StringComparison.OrdinalIgnoreCase) ||
+                             target.Equals(RestoreFlowManager.LegacyApplicationBackupName, StringComparison.OrdinalIgnoreCase);
+        string type = isApplication ? "Application" : "Database";
+        string name = isApplication ? BackupManager.ApplicationBackupName : target;
 
         _logger.LogInformation("Initiating restore for {Target} ({Type})", target, type);
-        int result = await _flow.ExecuteRestoreAsync(target, type, CancellationToken.None);
+        int result = await _flow.ExecuteRestoreAsync(name, type, cancellationToken);
 
 
         if (result == 0)

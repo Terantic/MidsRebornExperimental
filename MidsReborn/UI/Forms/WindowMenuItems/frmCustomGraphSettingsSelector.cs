@@ -27,6 +27,8 @@ namespace Mids_Reborn.UI.Forms.WindowMenuItems
         private void frmCustomGraphSettingsSelector_Load(object sender, EventArgs e)
         {
             Text = $"Options for {Stat} graph";
+            // Read before the radio buttons below reset the selection.
+            var initialVector = CurrentVectorIndex();
             switch (GetStatType())
             {
                 case StatType.Damage:
@@ -104,7 +106,7 @@ namespace Mids_Reborn.UI.Forms.WindowMenuItems
                 cbVector.Items.Add(v);
             }
 
-            cbVector.SelectedIndex = 0;
+            cbVector.SelectedIndex = Math.Max(0, initialVector);
 
             cbVector.ResumeLayout(true);
         }
@@ -119,43 +121,58 @@ namespace Mids_Reborn.UI.Forms.WindowMenuItems
             };
         }
 
+        // Explicit enum values offered for each graph; the combo box index maps directly into these arrays.
+        private static readonly Enums.eDamage[] DamageTypes =
+        [
+            Enums.eDamage.Smashing, Enums.eDamage.Lethal, Enums.eDamage.Fire, Enums.eDamage.Cold,
+            Enums.eDamage.Energy, Enums.eDamage.Negative, Enums.eDamage.Toxic, Enums.eDamage.Psionic
+        ];
+
+        private static readonly Enums.eDamage[] DamagePositions = [Enums.eDamage.Melee, Enums.eDamage.Ranged, Enums.eDamage.AoE];
+
+        private static readonly Enums.eEffectType[] DebuffEffects =
+        [
+            Enums.eEffectType.Defense, Enums.eEffectType.Endurance, Enums.eEffectType.Recovery,
+            Enums.eEffectType.PerceptionRadius, Enums.eEffectType.ToHit, Enums.eEffectType.RechargeTime,
+            Enums.eEffectType.SpeedRunning, Enums.eEffectType.Regeneration
+        ];
+
+        private static readonly Enums.eMez[] MezTypes =
+        [
+            Enums.eMez.Held, Enums.eMez.Stunned, Enums.eMez.Sleep, Enums.eMez.Immobilized,
+            Enums.eMez.Knockback, Enums.eMez.Repel, Enums.eMez.Confused, Enums.eMez.Terrorized,
+            Enums.eMez.Taunt, Enums.eMez.Placate, Enums.eMez.Teleport
+        ];
+
+        private Enums.eDamage[] AvailableDamageVectors()
+        {
+            return Stat switch
+            {
+                CustomGraphStat.eCustomGraphStat.Elusivity => [Enums.eDamage.None, .. DamageTypes, .. DamagePositions],
+                CustomGraphStat.eCustomGraphStat.Defense => [.. DamageTypes, .. DamagePositions],
+                _ => DamageTypes // Resistance
+            };
+        }
+
         private string[] AvailableVectors()
         {
             return GetStatType() switch
             {
-                StatType.Damage when Stat == CustomGraphStat.eCustomGraphStat.Elusivity => Enum.GetNames<Enums.eDamage>()[..8] // None + types
-                    .Concat(Enum.GetNames<Enums.eDamage>()[10..12]) // Positions
-                    .Select(e => e == "None" ? "Untyped" : e)
+                StatType.Damage => AvailableDamageVectors()
+                    .Select(e => e == Enums.eDamage.None ? "Untyped" : e.ToString())
                     .ToArray(),
-                StatType.Damage when Stat == CustomGraphStat.eCustomGraphStat.Defense => Enum.GetNames<Enums.eDamage>()[1..8] // Types
-                    .Concat(Enum.GetNames<Enums.eDamage>()[10..12]) // Positions
-                    .ToArray(),
-                StatType.Damage => Enum.GetNames<Enums.eDamage>()[1..8].ToArray(), // Resistance
-                StatType.Effect => new[]
-                {
-                    Enums.eEffectType.Defense,
-                    Enums.eEffectType.Endurance,
-                    Enums.eEffectType.Recovery,
-                    Enums.eEffectType.PerceptionRadius,
-                    Enums.eEffectType.ToHit,
-                    Enums.eEffectType.RechargeTime,
-                    Enums.eEffectType.SpeedRunning,
-                    Enums.eEffectType.Regeneration
-                }.Cast<string>().ToArray(),
-                _ => new[]
-                {
-                    Enums.eMez.Held,
-                    Enums.eMez.Stunned,
-                    Enums.eMez.Sleep,
-                    Enums.eMez.Immobilized,
-                    Enums.eMez.Knockback,
-                    Enums.eMez.Repel,
-                    Enums.eMez.Confused,
-                    Enums.eMez.Terrorized,
-                    Enums.eMez.Taunt,
-                    Enums.eMez.Placate,
-                    Enums.eMez.Teleport
-                }.Cast<string>().ToArray()
+                StatType.Effect => DebuffEffects.Select(e => e.ToString()).ToArray(),
+                _ => MezTypes.Select(e => e.ToString()).ToArray()
+            };
+        }
+
+        private int CurrentVectorIndex()
+        {
+            return GetStatType() switch
+            {
+                StatType.Damage => Settings.DamageType is { } d ? Array.IndexOf(AvailableDamageVectors(), d) : -1,
+                StatType.Effect => Settings.EffectTypeAux is { } fx ? Array.IndexOf(DebuffEffects, fx) : -1,
+                _ => Settings.MezType is { } m ? Array.IndexOf(MezTypes, m) : -1
             };
         }
 
@@ -163,89 +180,20 @@ namespace Mids_Reborn.UI.Forms.WindowMenuItems
         {
             switch (GetStatType())
             {
-                case StatType.Damage when Stat == CustomGraphStat.eCustomGraphStat.Elusivity:
-                    Settings.DamageType = index switch
-                    {
-                        0 => Enums.eDamage.None,
-                        1 => Enums.eDamage.Smashing,
-                        2 => Enums.eDamage.Lethal,
-                        3 => Enums.eDamage.Fire,
-                        4 => Enums.eDamage.Cold,
-                        5 => Enums.eDamage.Energy,
-                        6 => Enums.eDamage.Negative,
-                        7 => Enums.eDamage.Toxic,
-                        8 => Enums.eDamage.Psionic,
-                        9 => Enums.eDamage.Melee,
-                        10 => Enums.eDamage.Ranged,
-                        11 => Enums.eDamage.AoE,
-                        _ => null
-                    };
-
-                    break;
-
-                case StatType.Damage when Stat == CustomGraphStat.eCustomGraphStat.Defense:
-                    Settings.DamageType = index switch
-                    {
-                        0 => Enums.eDamage.Smashing,
-                        1 => Enums.eDamage.Lethal,
-                        2 => Enums.eDamage.Fire,
-                        3 => Enums.eDamage.Cold,
-                        4 => Enums.eDamage.Energy,
-                        5 => Enums.eDamage.Negative,
-                        6 => Enums.eDamage.Toxic,
-                        7 => Enums.eDamage.Psionic,
-                        8 => Enums.eDamage.Melee,
-                        9 => Enums.eDamage.Ranged,
-                        10 => Enums.eDamage.AoE,
-                        _ => null
-                    };
-
-                    break;
-
                 case StatType.Damage:
-                    if (index is < 0 or > 7)
-                    {
-                        Settings.DamageType = null;
-                        return;
-                    }
+                    var damageVectors = AvailableDamageVectors();
+                    Settings.DamageType = index >= 0 && index < damageVectors.Length ? damageVectors[index] : null;
 
-                    Settings.DamageType = (Enums.eDamage)(index + 1);
-                    
                     break;
 
                 case StatType.Effect:
-                    Settings.EffectTypeAux = index switch
-                    {
-                        0 => Enums.eEffectType.Defense,
-                        1 => Enums.eEffectType.Endurance,
-                        2 => Enums.eEffectType.Recovery,
-                        3 => Enums.eEffectType.PerceptionRadius,
-                        4 => Enums.eEffectType.ToHit,
-                        5 => Enums.eEffectType.RechargeTime,
-                        6 => Enums.eEffectType.SpeedRunning,
-                        7 => Enums.eEffectType.Regeneration,
-                        _ => null
-                    };
-                    
+                    Settings.EffectTypeAux = index >= 0 && index < DebuffEffects.Length ? DebuffEffects[index] : null;
+
                     break;
 
                 default:
-                    Settings.MezType = index switch
-                    {
-                        0 => Enums.eMez.Held,
-                        1 => Enums.eMez.Stunned,
-                        2 => Enums.eMez.Sleep,
-                        3 => Enums.eMez.Immobilized,
-                        4 => Enums.eMez.Knockback,
-                        5 => Enums.eMez.Repel,
-                        6 => Enums.eMez.Confused,
-                        7 => Enums.eMez.Terrorized,
-                        8 => Enums.eMez.Taunt,
-                        9 => Enums.eMez.Placate,
-                        10 => Enums.eMez.Teleport,
-                        _ => null
-                    };
-                    
+                    Settings.MezType = index >= 0 && index < MezTypes.Length ? MezTypes[index] : null;
+
                     break;
             }
         }

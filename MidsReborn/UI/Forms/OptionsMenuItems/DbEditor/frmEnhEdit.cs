@@ -172,7 +172,13 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
                 return;
             }
 
+            // selectedIndex is the database index; lvEnh.SelectedIndices[0] is only the (possibly filtered) display row.
             var selectedIndex = DatabaseAPI.GetEnhancementByUIDName(LvItems[lvEnh.SelectedIndices[0]][6]);
+            if (selectedIndex < 0)
+            {
+                return;
+            }
+
             using var frmEnhData = new frmEnhData(ref DatabaseAPI.Database.Enhancements[selectedIndex], 0);
             frmEnhData.ShowDialog();
             if (frmEnhData.DialogResult != DialogResult.OK)
@@ -181,9 +187,9 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
             }
 
             var newEnhancement = new Enhancement(frmEnhData.myEnh) { IsModified = true };
-            DatabaseAPI.Database.Enhancements[lvEnh.SelectedIndices[0]] = newEnhancement;
-            UpdateListItem(selectedIndex);
+            DatabaseAPI.Database.Enhancements[selectedIndex] = newEnhancement;
             DisplayList();
+            lvEnh.Invalidate();
         }
 
         private void BusyHide()
@@ -357,8 +363,6 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
 
             return item;
         }
-
-        private void UpdateListItem(int index) => LvItems[index] = GetEnhancementData(index);
 
         private void txtFilter_TextChanged(object sender, EventArgs e)
         {

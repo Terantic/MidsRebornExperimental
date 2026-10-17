@@ -10,6 +10,7 @@ public interface IUIManager
     void TriggerFailure();
     void TriggerCancel();
     void TriggerRollback();
+    void DisableCancel();
     void StartCleanup();
     void Close();
 }

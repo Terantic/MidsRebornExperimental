@@ -609,10 +609,11 @@ namespace Mids_Reborn.Core
             {
                 return condChunk.ToLowerInvariant() switch
                 {
-                    "player" => "PlayerSettings",
-                    "target" => "TargetSettings",
-                    "hp" => "HpPercent",
-                    "end" => "EndPercent",
+                    // Short aliases and the names stored by the conditionals editor (EnumerateFields)
+                    "player" or "playersettings" => "PlayerSettings",
+                    "target" or "targetsettings" => "TargetSettings",
+                    "hp" or "hppercent" => "HpPercent",
+                    "end" or "endpercent" => "EndPercent",
                     "isalive" => "IsAlive",
                     _ => ""
                 };

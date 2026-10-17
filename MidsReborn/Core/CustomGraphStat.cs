@@ -239,7 +239,7 @@ namespace Mids_Reborn.Core
                 _ => 0
             };
 
-            var debuffResIndex = cfgSettings.EffectType switch
+            var debuffResIndex = cfgSettings.EffectTypeAux switch
             {
                 Enums.eEffectType.Endurance => 1,
                 Enums.eEffectType.Recovery => 2,
@@ -412,10 +412,10 @@ namespace Mids_Reborn.Core
                 case eCustomGraphStat.Resistance:
                     val = mode switch
                     {
-                        eCustomGraphMode.Single => displayStats.Defense(cfgSettings.DamageType != null ? (int)cfgSettings.DamageType : 1),
-                        eCustomGraphMode.Min => displayStats.DefenseMin,
-                        eCustomGraphMode.Average => displayStats.DefenseAvg,
-                        _ => displayStats.DefenseMax,
+                        eCustomGraphMode.Single => displayStats.DamageResistance(cfgSettings.DamageType != null ? (int)cfgSettings.DamageType : 1, true),
+                        eCustomGraphMode.Min => displayStats.DamageResistanceMin,
+                        eCustomGraphMode.Average => displayStats.DamageResistanceAvg,
+                        _ => displayStats.DamageResistanceMax,
                     };
 
                     suffix = mode switch

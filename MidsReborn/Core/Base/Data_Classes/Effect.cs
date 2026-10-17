@@ -1786,6 +1786,10 @@ namespace Mids_Reborn.Core.Base.Data_Classes
                     };
 
                     break;
+                case "Config":
+                    cVp.Validated = BooleanExprPreprocessor.ValidateConfigCondition(conditionItemName, cVp.Value);
+
+                    break;
             }
 
             return cVp.Validated;
@@ -2103,126 +2107,11 @@ namespace Mids_Reborn.Core.Base.Data_Classes
 
             if (ActiveConditionals.Count > 0)
             {
-                var getCondition = new Regex("(:.*)");
-                var getConditionItem = new Regex("(.*:)");
-                foreach (var cVp in ActiveConditionals)
-                {
-                    var condition = getCondition.Replace(cVp.Key, "");
-                    var conditionItemName = getConditionItem.Replace(cVp.Key, "").Replace(":", "");
-                    var conditionPower = DatabaseAPI.GetPowerByFullName(conditionItemName);
-                    var cVal = cVp.Value.Split(' ');
-                    switch (condition)
-                    {
-                        case "Active":
-                            if (conditionPower != null)
-                            {
-                                bool? boolVal = Convert.ToBoolean(cVp.Value);
-                                if (MidsContext.Character.CurrentBuild.PowerActive(conditionPower) == boolVal)
-                                {
-                                    cVp.Validated = true;
-                                }
-                                else
-                                {
-                                    cVp.Validated = false;
-                                }
-                            }
-
-                            break;
-                        case "Taken":
-                            if (conditionPower != null)
-                            {
-                                cVp.Validated = MidsContext.Character.CurrentBuild.PowerUsed(conditionPower)
-                                    .Equals(Convert.ToBoolean(cVp.Value));
-                            }
-
-                            break;
-                        case "Stacks":
-                            if (conditionPower != null)
-                            {
-                                switch (cVal[0])
-                                {
-                                    case "=":
-
-                                        cVp.Validated = conditionPower.Stacks.Equals(Convert.ToInt32(cVal[1]));
-
-                                        break;
-                                    case ">":
-                                        cVp.Validated = conditionPower.Stacks > Convert.ToInt32(cVal[1]);
-
-                                        break;
-                                    case "<":
-                                        cVp.Validated = conditionPower.Stacks < Convert.ToInt32(cVal[1]);
-
-                                        break;
-                                }
-                            }
-
-                            break;
-                        case "Team":
-                            switch (cVal[0])
-                            {
-                                case "=":
-                                    if (MidsContext.Config.TeamMembers.ContainsKey(conditionItemName) && MidsContext
-                                        .Config.TeamMembers[conditionItemName].Equals(Convert.ToInt32(cVal[1])))
-                                    {
-                                        cVp.Validated = true;
-                                    }
-                                    else
-                                    {
-                                        cVp.Validated = false;
-                                    }
-
-                                    break;
-                                case ">":
-                                    if (MidsContext.Config.TeamMembers.ContainsKey(conditionItemName) &&
-                                        MidsContext.Config.TeamMembers[conditionItemName] >
-                                        Convert.ToInt32(cVal[1]))
-                                    {
-                                        cVp.Validated = true;
-                                    }
-                                    else
-                                    {
-                                        cVp.Validated = false;
-                                    }
-
-                                    break;
-                                case "<":
-                                    if (MidsContext.Config.TeamMembers.ContainsKey(conditionItemName) &&
-                                        MidsContext.Config.TeamMembers[conditionItemName] <
-                                        Convert.ToInt32(cVal[1]))
-                                    {
-                                        cVp.Validated = true;
-                                    }
-                                    else
-                                    {
-                                        cVp.Validated = false;
-                                    }
-
-                                    break;
-                            }
-
-                            break;
-                    }
-                }
-
-                int allValid = ActiveConditionals.Count;
-                foreach (var condition in ActiveConditionals)
-                {
-                    if (!condition.Validated)
-                        allValid -= 1;
-                }
-
-                if (allValid == ActiveConditionals.Count)
-                {
-                    Validated = true;
-                }
-                else
-                {
-                    Validated = false;
-                }
+                // Shared boolean evaluator: honours AND/OR chains and every condition type
+                // (Active, Taken, Stacks, Team, Config), same as ValidateConditional() callers.
+                Validated = ValidateConditional();
 
                 return Validated;
-
             }
 
             #endregion
@@ -2480,126 +2369,11 @@ namespace Mids_Reborn.Core.Base.Data_Classes
 
             if (ActiveConditionals.Count > 0)
             {
-                var getCondition = new Regex("(:.*)");
-                var getConditionItem = new Regex("(.*:)");
-                foreach (var cVp in ActiveConditionals)
-                {
-                    var condition = getCondition.Replace(cVp.Key, "");
-                    var conditionItemName = getConditionItem.Replace(cVp.Key, "").Replace(":", "");
-                    var conditionPower = DatabaseAPI.GetPowerByFullName(conditionItemName);
-                    var cVal = cVp.Value.Split(' ');
-                    switch (condition)
-                    {
-                        case "Active":
-                            if (conditionPower != null)
-                            {
-                                bool? boolVal = Convert.ToBoolean(cVp.Value);
-                                if (MidsContext.Character.CurrentBuild.PowerActive(conditionPower) == boolVal)
-                                {
-                                    cVp.Validated = true;
-                                }
-                                else
-                                {
-                                    cVp.Validated = false;
-                                }
-                            }
-
-                            break;
-                        case "Taken":
-                            if (conditionPower != null)
-                            {
-                                cVp.Validated = MidsContext.Character.CurrentBuild.PowerUsed(conditionPower)
-                                    .Equals(Convert.ToBoolean(cVp.Value));
-                            }
-
-                            break;
-                        case "Stacks":
-                            if (conditionPower != null)
-                            {
-                                switch (cVal[0])
-                                {
-                                    case "=":
-
-                                        cVp.Validated = conditionPower.Stacks.Equals(Convert.ToInt32(cVal[1]));
-
-                                        break;
-                                    case ">":
-                                        cVp.Validated = conditionPower.Stacks > Convert.ToInt32(cVal[1]);
-
-                                        break;
-                                    case "<":
-                                        cVp.Validated = conditionPower.Stacks < Convert.ToInt32(cVal[1]);
-
-                                        break;
-                                }
-                            }
-
-                            break;
-                        case "Team":
-                            switch (cVal[0])
-                            {
-                                case "=":
-                                    if (MidsContext.Config.TeamMembers.ContainsKey(conditionItemName) && MidsContext
-                                        .Config.TeamMembers[conditionItemName].Equals(Convert.ToInt32(cVal[1])))
-                                    {
-                                        cVp.Validated = true;
-                                    }
-                                    else
-                                    {
-                                        cVp.Validated = false;
-                                    }
-
-                                    break;
-                                case ">":
-                                    if (MidsContext.Config.TeamMembers.ContainsKey(conditionItemName) &&
-                                        MidsContext.Config.TeamMembers[conditionItemName] >
-                                        Convert.ToInt32(cVal[1]))
-                                    {
-                                        cVp.Validated = true;
-                                    }
-                                    else
-                                    {
-                                        cVp.Validated = false;
-                                    }
-
-                                    break;
-                                case "<":
-                                    if (MidsContext.Config.TeamMembers.ContainsKey(conditionItemName) &&
-                                        MidsContext.Config.TeamMembers[conditionItemName] <
-                                        Convert.ToInt32(cVal[1]))
-                                    {
-                                        cVp.Validated = true;
-                                    }
-                                    else
-                                    {
-                                        cVp.Validated = false;
-                                    }
-
-                                    break;
-                            }
-
-                            break;
-                    }
-                }
-
-                int allValid = ActiveConditionals.Count;
-                foreach (var condition in ActiveConditionals)
-                {
-                    if (!condition.Validated)
-                        allValid -= 1;
-                }
-
-                if (allValid == ActiveConditionals.Count)
-                {
-                    Validated = true;
-                }
-                else
-                {
-                    Validated = false;
-                }
+                // Shared boolean evaluator: honours AND/OR chains and every condition type
+                // (Active, Taken, Stacks, Team, Config), same as ValidateConditional() callers.
+                Validated = ValidateConditional();
 
                 return Validated;
-
             }
 
             #endregion

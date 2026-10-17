@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using MRB_Boostrap.Models;
+using MRB_Boostrap.Utilities;
 
 namespace MRB_Boostrap.Services;
 
@@ -8,6 +9,23 @@ public sealed class BackupManager : IBackupManager
     private readonly ILogger<BackupManager> _logger;
     private readonly IFileCompressor _compressor;
     private readonly IFileDecompressor _decompressor;
+
+    /// <summary>
+    /// Canonical identifier of the application backup (Backup/Application.mrbak), shared by
+    /// backup creation and every restore path so they always agree on the file name.
+    /// </summary>
+    public const string ApplicationBackupName = "Application";
+
+    // Top-level prefixes left alone by application backup/restore (prefix match, so "Data" also covers "Databases")
+    private static readonly string[] ExcludedApplicationPrefixes = ["Logs", "Staging", "Backup", "Data", "Patches"];
+
+    // The running bootstrapper is loaded from these files and cannot be replaced while it runs,
+    // so they never take part in an application backup or restore (including entries in older backups).
+    private static readonly HashSet<string> BootstrapperFiles = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "MRBBootstrap.exe", "MRBBootstrap.dll", "MRBBootstrap.pdb",
+        "MRBBootstrap.runtimeconfig.json", "MRBBootstrap.deps.json"
+    };
 
     public BackupManager(ILogger<BackupManager> logger, IFileCompressor compressor, IFileDecompressor decompressor)
     {
@@ -24,16 +42,11 @@ public sealed class BackupManager : IBackupManager
 
             if (patchType.Equals("Application", StringComparison.OrdinalIgnoreCase))
             {
-                string[] excluded = [
-                    "MRBBootstrap.exe", "Logs",
-                "Staging", "Backup", "Data", "Patches"
-                ];
-
                 foreach (string file in Directory.EnumerateFiles(installPath, "*", SearchOption.AllDirectories))
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     string rel = Path.GetRelativePath(installPath, file);
-                    if (excluded.Any(ex => rel.StartsWith(ex, StringComparison.OrdinalIgnoreCase)))
+                    if (IsExcludedFromApplicationBackup(rel))
                         continue;
 
                     entries.Add(new FileEntry
@@ -116,41 +129,94 @@ public sealed class BackupManager : IBackupManager
 
     public async Task<bool> RestoreBackupAsync(string installPath, string backupPath, string patchType, string name, CancellationToken cancellationToken)
     {
+        string bakFile = Path.ChangeExtension(backupPath, ".mrbak");
+        string scratchPath = backupPath + ".restoring";
+        bool isApplication = patchType.Equals("Application", StringComparison.OrdinalIgnoreCase);
+
         try
         {
-            string bakFile = Path.ChangeExtension(backupPath, ".mrbak");
-
             if (!File.Exists(bakFile))
             {
                 _logger.LogError("Missing backup file: {Path}", bakFile);
                 return false;
             }
 
+            // Phase 1: fully read and validate the backup before anything is deleted.
+            // The decompressor returns no entries for a truncated or inconsistent archive.
             List<FileEntry> entries = await _decompressor.DecompressAsync(bakFile, cancellationToken);
             if (entries.Count == 0)
             {
-                _logger.LogError("Backup decompression yielded no files.");
+                _logger.LogError("Backup is empty, incomplete or corrupt: {Path}", bakFile);
                 return false;
             }
 
-            // Clean existing install path
-            if (patchType.Equals("Application", StringComparison.OrdinalIgnoreCase))
+            var toRestore = new List<(string RelativePath, FileEntry Entry)>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var file in entries)
             {
-                string[] excluded = [
-                    "MRBBootstrap.exe", "Logs",
-                "Staging", "Backup", "Data", "Patches"
-                ];
+                if (!PathSafety.TryResolveEntry(installPath, file.Directory, file.FileName, out string rel, out _))
+                {
+                    _logger.LogError("Backup contains an unsafe path: Directory='{Dir}', FileName='{File}'", file.Directory, file.FileName);
+                    return false;
+                }
 
+                if (!seen.Add(rel))
+                {
+                    _logger.LogError("Backup contains a duplicate entry: {Path}", rel);
+                    return false;
+                }
+
+                if (file.Directory.Equals("Logs", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (isApplication && IsExcludedFromApplicationBackup(rel))
+                {
+                    _logger.LogInformation("Skipping excluded backup entry: {Path}", rel);
+                    continue;
+                }
+
+                toRestore.Add((rel, file));
+            }
+
+            if (toRestore.Count == 0)
+            {
+                _logger.LogError("Backup contains no restorable files: {Path}", bakFile);
+                return false;
+            }
+
+            // Phase 2: write the restored files to a scratch folder first, so a write failure
+            // (disk full, permissions) is discovered before the installation is touched.
+            TryDeleteDirectory(scratchPath);
+            foreach (var (rel, file) in toRestore)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (!PathSafety.TryResolveUnderRoot(scratchPath, rel, out string scratchFile))
+                {
+                    _logger.LogError("Failed to resolve scratch path for {Path}", rel);
+                    return false;
+                }
+
+                Directory.CreateDirectory(Path.GetDirectoryName(scratchFile)!);
+                await File.WriteAllBytesAsync(scratchFile, file.Data, cancellationToken);
+            }
+
+            // From here on the restore is destructive and is never cancelled part-way.
+
+            // Phase 3: clean existing install path
+            if (isApplication)
+            {
                 foreach (string file in Directory.EnumerateFiles(installPath, "*", SearchOption.AllDirectories))
                 {
                     string rel = Path.GetRelativePath(installPath, file);
-                    if (excluded.Any(ex => rel.StartsWith(ex, StringComparison.OrdinalIgnoreCase)))
+                    if (IsExcludedFromApplicationBackup(rel))
                         continue;
 
                     try { File.Delete(file); }
-                    catch
+                    catch (Exception ex)
                     {
-                        // ignored
+                        // The restored copy overwrites it below where possible
+                        _logger.LogWarning(ex, "Failed to delete {Path} before restore", file);
                     }
                 }
             }
@@ -166,26 +232,38 @@ public sealed class BackupManager : IBackupManager
                 }
             }
 
-            // Write restored files
-            foreach (var file in entries)
+            // Phase 4: move restored files into place. Keep going on individual failures so as
+            // much of the installation as possible is recovered, but report the restore as failed.
+            bool complete = true;
+            foreach (var (rel, _) in toRestore)
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                PathSafety.TryResolveUnderRoot(scratchPath, rel, out string scratchFile);
+                PathSafety.TryResolveUnderRoot(installPath, rel, out string targetFile);
 
-                if (file.Directory.Equals("Logs", StringComparison.OrdinalIgnoreCase))
-                    continue;
+                try
+                {
+                    string? targetDir = Path.GetDirectoryName(targetFile);
+                    if (!string.IsNullOrEmpty(targetDir))
+                        Directory.CreateDirectory(targetDir);
 
-                string targetFile = Path.Combine(installPath, file.Directory, file.FileName);
-                string? targetDir = Path.GetDirectoryName(targetFile);
+                    File.Move(scratchFile, targetFile, overwrite: true);
+                }
+                catch (Exception ex)
+                {
+                    complete = false;
+                    _logger.LogError(ex, "Failed to restore {Path}", targetFile);
+                }
+            }
 
-                if (!string.IsNullOrEmpty(targetDir))
-                    Directory.CreateDirectory(targetDir);
-
-                await File.WriteAllBytesAsync(targetFile, file.Data, cancellationToken);
+            if (!complete)
+            {
+                _logger.LogError("Backup restored only partially. Backup kept for another attempt: {Path}", bakFile);
+                return false;
             }
 
             _logger.LogInformation("Backup restored from {Path}", bakFile);
 
-            // Delete backup after restoration
+            // Delete backup only after a complete restoration
             try
             {
                 File.Delete(bakFile);
@@ -207,6 +285,35 @@ public sealed class BackupManager : IBackupManager
         {
             _logger.LogError(ex, "Restore failed.");
             return false;
+        }
+        finally
+        {
+            TryDeleteDirectory(scratchPath);
+        }
+    }
+
+    /// <summary>
+    /// Resolves the backup path (without the .mrbak extension) for an update entry or rollback target.
+    /// Application backups always use <see cref="ApplicationBackupName"/>, whatever display name the entry carries.
+    /// </summary>
+    public static string GetBackupPath(string baseDir, string patchType, string name) =>
+        Path.Combine(baseDir, "Backup",
+            patchType.Equals("Application", StringComparison.OrdinalIgnoreCase) ? ApplicationBackupName : name);
+
+    private static bool IsExcludedFromApplicationBackup(string relativePath) =>
+        BootstrapperFiles.Contains(relativePath) ||
+        ExcludedApplicationPrefixes.Any(ex => relativePath.StartsWith(ex, StringComparison.OrdinalIgnoreCase));
+
+    private static void TryDeleteDirectory(string path)
+    {
+        try
+        {
+            if (Directory.Exists(path))
+                Directory.Delete(path, recursive: true);
+        }
+        catch
+        {
+            // Best-effort cleanup
         }
     }
 }

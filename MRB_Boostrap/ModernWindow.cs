@@ -30,6 +30,7 @@ namespace MRB_Boostrap
         private const int WmUiTriggerRollback = 0x0400 + 7;
         private const int WmUiStartCleanup = 0x0400 + 8;
         private const int WmUiCloseWindow = 0x0400 + 9;
+        private const int WmUiDisableCancel = 0x0400 + 10;
 
         private readonly IntPtr _hWnd;
 
@@ -45,6 +46,11 @@ namespace MRB_Boostrap
         private bool _showProgressBar = true;
 
         private System.Windows.Forms.Timer? _refreshTimer;
+
+        /// <summary>
+        /// Raised (on the UI thread) when the user clicks Cancel while cancelling is still allowed.
+        /// </summary>
+        public event Action? CancelRequested;
 
         public ModernWindow()
         {
@@ -125,6 +131,7 @@ namespace MRB_Boostrap
                         _cancelHover = false;
                         _currentStatus = "Cancelling update...";
                         InvalidateRect(_hWnd, IntPtr.Zero, true);
+                        CancelRequested?.Invoke();
                     }
                     else
                     {
@@ -189,6 +196,12 @@ namespace MRB_Boostrap
                     // Add cleanup logic here
                     _currentStatus = "Cleanup complete.";
                     InvalidateRect(_hWnd, IntPtr.Zero, true);
+                    return;
+
+                case WmUiDisableCancel:
+                    _cancelEnabled = false;
+                    _cancelHover = false;
+                    InvalidateRect(_hWnd, IntPtr.Zero, false);
                     return;
 
                 case WmUiCloseWindow:
@@ -466,6 +479,7 @@ namespace MRB_Boostrap
         public void PostTriggerCancel() => PostMessage(_instance?._hWnd ?? IntPtr.Zero, WmUiTriggerCancel, IntPtr.Zero, IntPtr.Zero);
         public void PostTriggerRollback() => PostMessage(_instance?._hWnd ?? IntPtr.Zero, WmUiTriggerRollback, IntPtr.Zero, IntPtr.Zero);
         public void PostStartCleanup() => PostMessage(_instance?._hWnd ?? IntPtr.Zero, WmUiStartCleanup, IntPtr.Zero, IntPtr.Zero);
+        public void PostDisableCancel() => PostMessage(_instance?._hWnd ?? IntPtr.Zero, WmUiDisableCancel, IntPtr.Zero, IntPtr.Zero);
         public void PostCloseWindow() => PostMessage(_instance?._hWnd ?? IntPtr.Zero, WmUiCloseWindow, IntPtr.Zero, IntPtr.Zero);
 
         private static void PostString(int msg, string value)

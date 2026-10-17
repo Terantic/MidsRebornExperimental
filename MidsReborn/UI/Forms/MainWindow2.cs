@@ -162,16 +162,16 @@ namespace Mids_Reborn.UI.Forms
                 {
                     case "-load":
                         var nArgs = CommandArgs.Skip(1);
-                        var file = string.Join(" ", nArgs);
+                        var file = string.Join(" ", nArgs).Trim().Trim('"');
                         MidsContext.Config.DisableLoadLastFileOnStart = false;
                         switch (file)
                         {
-                            case var _ when DlgOpen.FileName.EndsWith(".mxd"):
-                                DoOpen(file);
+                            case var _ when file.EndsWith(".mxd", StringComparison.OrdinalIgnoreCase):
+                                toonLoaded = DoOpen(file);
                                 break;
 
-                            case var _ when DlgOpen.FileName.EndsWith(".mbd"):
-                                LoadCharacterFile(file);
+                            case var _ when file.EndsWith(".mbd", StringComparison.OrdinalIgnoreCase):
+                                toonLoaded = LoadCharacterFile(file);
                                 break;
                         }
 
@@ -1455,9 +1455,15 @@ namespace Mids_Reborn.UI.Forms
                 return false;
             }
 
-            DataViewLocked = false;
-            NewToon(true, true);
-            if (_buildManager.LoadFromFile(fileName))
+            // The active build is only cleared once the file has been read and validated
+            var replaced = false;
+            if (_buildManager.LoadFromFile(fileName, () =>
+                {
+                    DataViewLocked = false;
+                    NewToon(true, true);
+                    replaced = true;
+                    return true;
+                }))
             {
                 if (!asTemplate)
                 {
@@ -1469,8 +1475,17 @@ namespace Mids_Reborn.UI.Forms
             {
                 if (!asTemplate)
                 {
-                    MidsContext.Config.LastFileName = string.Empty;
-                    LastFileName = string.Empty;
+                    if (replaced)
+                    {
+                        // The previous build is gone, don't let a save overwrite its file
+                        LastFileName = string.Empty;
+                        MidsContext.Config.LastFileName = string.Empty;
+                    }
+                    else if (MidsContext.Config.LastFileName == fileName)
+                    {
+                        // Unreadable file, don't try it again on next start
+                        MidsContext.Config.LastFileName = string.Empty;
+                    }
                 }
                 
                 return false;
@@ -3578,6 +3593,8 @@ The default position/state will be used upon next launch.", @"Window State Warni
 
         private void NewToon(bool init = true, bool skipDraw = false)
         {
+            // A new or replaced build isn't the previously shared one; a shared-build load sets its id again afterwards
+            _buildManager.ClearShareId();
             try
             {
                 if (MainModule.MidsController.Toon == null)
@@ -6384,14 +6401,31 @@ The default position/state will be used upon next launch.", @"Window State Warni
             var result = importBuild.ShowDialog(this);
             if (result == DialogResult.OK)
             {
-                DataViewLocked = false;
-                NewToon(true, true);
-                loaded =_buildManager.ValidateAndLoadImportData(importBuild.ImportClassificationResult);
+                // The data is decoded and validated first; the current build is only discarded (after asking) once it's good
+                loaded =_buildManager.ValidateAndLoadImportData(importBuild.ImportClassificationResult, () =>
+                {
+                    if (MainModule.MidsController.Toon.Locked & FileModified)
+                    {
+                        FloatTop(false);
+                        var msgBoxResult = MessageBox.Show(@"Current character data will be discarded, are you sure?", @"Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                        FloatTop(true);
+                        if (msgBoxResult == DialogResult.No)
+                        {
+                            return false;
+                        }
+                    }
+
+                    DataViewLocked = false;
+                    NewToon(true, true);
+                    // Imported data has no local file, the first save must ask where to put it
+                    LastFileName = "";
+                    MidsContext.Config.LastFileName = "";
+                    return true;
+                });
             }
 
             if (!loaded) return;
             FileModified = false;
-            LastFileName = "";
             SetTitleBar();
             SetLockedPoolsState();
             if (drawing != null) drawing.Highlight = -1;
@@ -6409,8 +6443,20 @@ The default position/state will be used upon next launch.", @"Window State Warni
                 return;
             }
 
-            _buildManager.ValidateAndLoadSchemaData(vsb.FetchedData.Data, vsb.FetchedData.Id);
+            // SharedBuilds already asked before replacing the current build; keep it if the fetched one can't be loaded
+            var loaded = _buildManager.ValidateAndLoadSchemaData(vsb.FetchedData.Data, vsb.FetchedData.Id, () =>
+            {
+                DataViewLocked = false;
+                NewToon(true, true);
+                // A shared build has no local file yet, the first save must ask where to put it
+                LastFileName = "";
+                MidsContext.Config.LastFileName = "";
+                return true;
+            });
+            if (!loaded) return;
             FileModified = false;
+            SetTitleBar();
+            SetLockedPoolsState();
             if (drawing != null)
             {
                 drawing.Highlight = -1;

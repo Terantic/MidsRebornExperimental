@@ -270,18 +270,58 @@ namespace Mids_Reborn.Core.BuildFile
             return outList;
         }
 
+        /// <summary>
+        /// Checks the fields LoadBuild relies on, so a bad build is rejected before the active character is touched.
+        /// </summary>
+        internal bool ValidateForLoad(out string error)
+        {
+            var atNiD = DatabaseAPI.NidFromUidClass(Class);
+            if (atNiD < 0 || atNiD >= DatabaseAPI.Database.Classes.Length || DatabaseAPI.Database.Classes[atNiD] == null)
+            {
+                error = $"Unknown archetype: {Class}";
+                return false;
+            }
+
+            if (!Enum.TryParse<Enums.Alignment>(Alignment, out var alignment) || !Enum.IsDefined(alignment))
+            {
+                error = $"Unknown alignment: {Alignment}";
+                return false;
+            }
+
+            // Character.Powersets is a fixed layout (primary, secondary, inherent, 4 pools, epic)
+            if (PowerSets is not { Count: 8 })
+            {
+                error = "Invalid powerset list.";
+                return false;
+            }
+
+            if (PowerEntries == null)
+            {
+                error = "Missing power entries.";
+                return false;
+            }
+
+            error = string.Empty;
+            return true;
+        }
+
         internal bool LoadBuild()
         {
             InherentPowers = new List<PowerEntry>();
 
             var atNiD = DatabaseAPI.NidFromUidClass(Class);
-            var atOrigin = DatabaseAPI.NidFromUidOrigin(Origin, atNiD);
+            var atOrigin = Math.Max(DatabaseAPI.NidFromUidOrigin(Origin, atNiD), 0);
             MidsContext.Character.Reset(DatabaseAPI.Database.Classes[atNiD], atOrigin);
             MidsContext.Character.Alignment = Enum.Parse<Enums.Alignment>(Alignment);
             MidsContext.Character.Name = Name;
             MidsContext.Character.Comment = Comment ?? string.Empty;
             MidsContext.Character.LoadPowerSetsByName(PowerSets);
-            MidsContext.Character.CurrentBuild!.LastPower = LastPower;
+            // Saved one-based (see Update); keep the layout's own value if the file's is out of range
+            var lastPower = LastPower - 1;
+            if (lastPower >= 0 && lastPower <= MidsContext.Character.CurrentBuild!.LastPower)
+            {
+                MidsContext.Character.CurrentBuild.LastPower = lastPower;
+            }
 
             try
             {
