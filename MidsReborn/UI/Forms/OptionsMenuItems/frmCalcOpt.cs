@@ -125,8 +125,24 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems
         private void MovePrior(string priorPath, string currentPath)
         {
             Debug.WriteLine($"Prev: {priorPath}\nCurrent: {currentPath}");
-            if (currentPath == priorPath)
+            if (string.IsNullOrWhiteSpace(priorPath) || !Directory.Exists(priorPath))
             {
+                return;
+            }
+
+            var priorFull = NormalizeDirectory(priorPath);
+            var currentFull = NormalizeDirectory(currentPath);
+            if (PathEquals(priorFull, currentFull))
+            {
+                return;
+            }
+
+            // Copying into a subfolder of the old location would leave the copies inside the
+            // directory we later offer to delete recursively.
+            if (currentFull.StartsWith(priorFull, PathComparison))
+            {
+                MessageBox.Show(@"The new builds folder is inside the current builds folder, so your builds cannot be copied there automatically.
+Please move these items manually.", @"Builds Path Change Detected!", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                 return;
             }
 
@@ -155,6 +171,24 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems
                 MessageBox.Show(@"Some builds could not be moved to the new location.
 Please move these items manually.", @"Move Completed With Exceptions", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
+        }
+
+        private static StringComparison PathComparison => OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
+            ? StringComparison.OrdinalIgnoreCase
+            : StringComparison.Ordinal;
+
+        private static bool PathEquals(string a, string b) => string.Equals(a, b, PathComparison);
+
+        private static string NormalizeDirectory(string path)
+        {
+            var full = Path.GetFullPath(path);
+            var info = new DirectoryInfo(full);
+            if (info.Exists && info.LinkTarget != null)
+            {
+                full = info.ResolveLinkTarget(true)?.FullName ?? full;
+            }
+
+            return Path.TrimEndingDirectorySeparator(full) + Path.DirectorySeparatorChar;
         }
 
         private void btnSaveFolderReset_Click(object sender, EventArgs e)

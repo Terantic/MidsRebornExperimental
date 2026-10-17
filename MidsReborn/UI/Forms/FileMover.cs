@@ -12,6 +12,7 @@ namespace Mids_Reborn.UI.Forms
     {
         private readonly BackgroundWorker _progressWorker = new();
         private bool _moveExceptionRequested;
+        private int _copiedCount;
         private readonly string _sourceDirectory;
         private readonly string _destinationDirectory;
         private readonly List<Item> _items = new();
@@ -66,16 +67,11 @@ namespace Mids_Reborn.UI.Forms
                     continue;
                 }
 
-                var dirInfo = fileInfo.Directory;
-                if (dirInfo == null)
-                {
-                    continue;
-                }
-
-                _items.Add(_sourceDirectory.Contains(dirInfo.Name)
-                    ? new Item(fileInfo.FullName, string.Empty, Path.Combine(_destinationDirectory, fileInfo.Name))
-                    : new Item(fileInfo.FullName, dirInfo.Name,
-                        Path.Combine(_destinationDirectory, dirInfo.Name, fileInfo.Name)));
+                // Keep the full path relative to the source root so nested folders
+                // (and identically named folders under different parents) are preserved.
+                var relativePath = Path.GetRelativePath(_sourceDirectory, fileInfo.FullName);
+                var relativeDir = Path.GetDirectoryName(relativePath) ?? string.Empty;
+                _items.Add(new Item(fileInfo.FullName, relativeDir, Path.Combine(_destinationDirectory, relativePath)));
             }
         }
 
@@ -104,6 +100,14 @@ namespace Mids_Reborn.UI.Forms
                 try
                 {
                     File.Copy(item.Source, item.Destination); // File.Move()
+                    if (File.Exists(item.Destination))
+                    {
+                        _copiedCount++;
+                    }
+                    else
+                    {
+                        _moveExceptionRequested = true;
+                    }
                 }
                 catch (Exception)
                 {
@@ -124,7 +128,10 @@ namespace Mids_Reborn.UI.Forms
         private void ProgressWorker_RunWorkerCompleted(object? sender, RunWorkerCompletedEventArgs e)
         {
             ctlProgressBar1.StatusText = string.Empty;
-            DialogResult = !_moveExceptionRequested
+            // Only report success when the worker finished cleanly and every file was copied;
+            // the caller offers to delete the originals on Yes.
+            var succeeded = e.Error == null && !e.Cancelled && !_moveExceptionRequested && _copiedCount == _items.Count;
+            DialogResult = succeeded
                 ? DialogResult.Yes
                 : DialogResult.No;
         }
