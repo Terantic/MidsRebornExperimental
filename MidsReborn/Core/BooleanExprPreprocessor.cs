@@ -12,45 +12,6 @@ namespace Mids_Reborn.Core
     public static class BooleanExprPreprocessor
     {
         /// <summary>
-        /// Get conditionals from effect, validate each of them
-        /// Return value for single conditionals is either "1" or "0"
-        /// </summary>
-        /// <param name="effect">Source effect</param>
-        /// <returns>List of pre-processed conditionals from source effect</returns>
-        private static IEnumerable<string> GetConditions(IEffect effect)
-        {
-            var ret = new List<string>();
-            if (effect.ActiveConditionals is not {Count: > 0})
-            {
-                return ret;
-            }
-
-            ret.AddRange(effect.ActiveConditionals
-                .Select((t, i) => i > 0 && t.Key.StartsWith("OR ") ? "OR " : "")
-                .Select((prefix, i) => $"{prefix}{(effect.ValidateConditional(i) ? "1" : "0")}"));
-
-            return ret;
-        }
-
-        /// <summary>
-        /// Build global infix expression from conditionals
-        /// Use the result of <see cref="GetConditions"/>
-        /// </summary>
-        /// <param name="expressions">Conditional expressions</param>
-        /// <returns>Single expression string with infix operators</returns>
-        private static string BuildGlobalExpression(IEnumerable<string> expressions)
-        {
-            return expressions.Select(expr => expr.Trim())
-                .Aggregate("", (current, s) => current + (current == ""
-                    ? s.StartsWith("OR ")
-                        ? s.Replace("OR ", "")
-                        : s
-                    : s.StartsWith("OR ")
-                        ? $" {s}"
-                        : $" AND {s}"));
-        }
-
-        /// <summary>
         /// Get config value from the ConfigData.CombatContextSettings branch
         /// </summary>
         /// <param name="cond">Config field name</param>
@@ -95,6 +56,53 @@ namespace Mids_Reborn.Core
         }
 
         /// <summary>
+        /// Validate a single Config conditional against the combat context settings
+        /// </summary>
+        /// <param name="settingName">Config field name, e.g. cfg.PlayerSettings.hppercent or cfg.player.isalive</param>
+        /// <param name="conditionValue">Conditional value: operator and operand, e.g. "&lt; 76" or "= True"</param>
+        /// <returns>True if the current setting satisfies the conditional</returns>
+        public static bool ValidateConfigCondition(string settingName, string conditionValue)
+        {
+            var cVal = conditionValue.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (cVal.Length < 2)
+            {
+                return false;
+            }
+
+            var chunks = settingName.ToLowerInvariant().Split('.');
+            if (ConfigData.CombatContext.ConfigChunkType(chunks[^1]) == "bool")
+            {
+                if (!bool.TryParse(cVal[1], out var expected))
+                {
+                    return false;
+                }
+
+                bool current = GetConfigValue(settingName, false) > 0;
+
+                return cVal[0] switch
+                {
+                    "=" => current == expected,
+                    _ => false
+                };
+            }
+
+            if (!int.TryParse(cVal[1], out var operand))
+            {
+                return false;
+            }
+
+            int value = GetConfigValue(settingName, false);
+
+            return cVal[0] switch
+            {
+                "=" => value == operand,
+                ">" => value > operand,
+                "<" => value < operand,
+                _ => false
+            };
+        }
+
+        /// <summary>
         /// Build global infix expression from conditionals, restrict to conditional type and power name
         /// </summary>
         /// <param name="effect">Source effect</param>
@@ -121,7 +129,6 @@ namespace Mids_Reborn.Core
                 var condition = getCondition.Replace(k, "");
                 var conditionItemName = getConditionItem.Replace(k, "").Replace(":", "");
                 var conditionPower = condition == "Config" ? null : DatabaseAPI.GetPowerByFullName(conditionItemName);
-                var configValueInt = GetConfigValue(condition == "Config" ? conditionItemName : "", false);
                 var cVal = cVp.Value.Split(' ');
                 var powerDisplayName = conditionPower?.DisplayName;
 
@@ -168,17 +175,7 @@ namespace Mids_Reborn.Core
                 }
                 else if (string.Equals(cType, condition, StringComparison.CurrentCultureIgnoreCase) && condition == "Config")
                 {
-                    conditionResults.Add(conditionItemName.ToLowerInvariant() switch
-                    {
-                        "cfg.player.isalive" => cVal[1] == "True" ? MidsContext.Config.CombatContextSettings.PlayerSettings.IsAlive : !MidsContext.Config.CombatContextSettings.PlayerSettings.IsAlive,
-                        _ => cVal[0] switch
-                        {
-                            "=" => configValueInt == Convert.ToInt32(cVal[1]),
-                            ">" => configValueInt > Convert.ToInt32(cVal[1]),
-                            "<" => configValueInt < Convert.ToInt32(cVal[1]),
-                            _ => true
-                        }
-                    });
+                    conditionResults.Add(ValidateConfigCondition(conditionItemName, cVp.Value));
                 }
                 else
                 {
@@ -223,7 +220,6 @@ namespace Mids_Reborn.Core
                 var condition = getCondition.Replace(k, "");
                 var conditionItemName = getConditionItem.Replace(k, "").Replace(":", "");
                 var conditionPower = condition == "Config" ? null : DatabaseAPI.GetPowerByFullName(conditionItemName);
-                var configValueInt = GetConfigValue(condition == "Config" ? conditionItemName : "", false);
                 var buildPowers = MidsContext.Character.CurrentBuild.Powers;
                 var cVal = cVp.Value.Split(' ');
                 var powerDisplayName = conditionPower?.DisplayName;
@@ -277,29 +273,7 @@ namespace Mids_Reborn.Core
                         break;
 
                     case "Config":
-                        conditionResults.Add(conditionItemName.ToLowerInvariant() switch
-                        {
-                            "cfg.player.isalive" => cVal[1] == "True" ? MidsContext.Config.CombatContextSettings.PlayerSettings.IsAlive : !MidsContext.Config.CombatContextSettings.PlayerSettings.IsAlive,
-                            _ => cVal[0] switch
-                            {
-                                "=" => configValueInt == Convert.ToInt32(cVal[1]),
-                                ">" => configValueInt > Convert.ToInt32(cVal[1]),
-                                "<" => configValueInt < Convert.ToInt32(cVal[1]),
-                                _ => true
-                            }
-                        });
-
-                        conditionResults.Add(cVal[0] switch
-                        {
-                            "=" => MidsContext.Config.TeamMembers.ContainsKey(conditionItemName) && MidsContext.Config
-                                .TeamMembers[conditionItemName]
-                                .Equals(Convert.ToInt32(cVal[1])),
-                            ">" => MidsContext.Config.TeamMembers.ContainsKey(conditionItemName) &&
-                                   MidsContext.Config.TeamMembers[conditionItemName] > Convert.ToInt32(cVal[1]),
-                            "<" => MidsContext.Config.TeamMembers.ContainsKey(conditionItemName) &&
-                                   MidsContext.Config.TeamMembers[conditionItemName] < Convert.ToInt32(cVal[1]),
-                            _ => true
-                        });
+                        conditionResults.Add(ValidateConfigCondition(conditionItemName, cVp.Value));
 
                         break;
 
@@ -396,37 +370,6 @@ namespace Mids_Reborn.Core
             return mergedTokens;
         }
 
-        /// <summary>
-        /// Build Jace-compatible prefix style formula from effect conditionals
-        /// </summary>
-        /// <param name="effect">Source effect</param>
-        /// <see cref="GetConditions"/>
-        /// <see cref="BuildGlobalExpression"/>
-        /// <see cref="Tokenize"/>
-        /// <see cref="Merge"/>
-        /// <seealso cref="Parse(IEffect)"/>
-        /// <returns>Expression from conditionals, prefix style</returns>
-        private static string Build(IEffect effect)
-        {
-            var conditionals = GetConditions(effect);
-            var expr = BuildGlobalExpression(conditionals);
-            var tokens = Tokenize(expr);
-
-            //Debug.WriteLine($"------ Begin testing conditionals validation ------");
-            //Debug.WriteLine($"  Initial expression: {string.Join(", ", tokens)}\r\n");
-            //Debug.WriteLine($"    Merging AND operators");
-            tokens = Merge(tokens, "AND");
-            //Debug.WriteLine($"    Result after AND merge: {string.Join(" ", tokens)}\r\n");
-
-            //Debug.WriteLine($"    Merging OR operators");
-            tokens = Merge(tokens, "OR");
-            //Debug.WriteLine($"    Result after OR merge: {string.Join(" ", tokens)}\r\n");
-
-            //Debug.WriteLine($"  Final expression: {string.Join(" ", tokens)}\r\n");
-
-            return string.Join(" ", tokens);
-        }
-
         private static string Build(string expr)
         {
             var tokens = Tokenize(expr);
@@ -437,49 +380,37 @@ namespace Mids_Reborn.Core
         }
 
         /// <summary>
-        /// Compute prefix style formula
+        /// Validate all conditionals of an effect, as an AND/OR chain (AND binds tighter than OR)
         /// </summary>
         /// <param name="effect">Source effect</param>
-        /// <seealso cref="Build(IEffect)"/>
         /// <returns>Result of expression, as boolean</returns>
         public static bool Parse(IEffect effect)
         {
-            var prefixExpr = Build(effect);
-            var mathEngine = CalculationEngine.New<double>();
-
-            mathEngine.AddFunction("AND", (a, b) => a > 0 & b > 0 ? 1 : 0);
-            mathEngine.AddFunction("OR", (a, b) => a > 0 | b > 0 ? 1 : 0);
-
-            if (string.IsNullOrWhiteSpace(prefixExpr))
+            if (effect.ActiveConditionals is not {Count: > 0})
             {
                 return true;
             }
 
-            var ret = false;
-            try
+            // Evaluated directly rather than through the math engine: this is called for every
+            // conditional effect on each recalculation (CanInclude/CanGrantPower).
+            // Every conditional is validated, as ValidateConditional(int) also refreshes its Validated flag.
+            var result = false;
+            var andGroup = true;
+            for (var i = 0; i < effect.ActiveConditionals.Count; i++)
             {
-                ret = mathEngine.Calculate(prefixExpr) > 0;
-            }
-            catch (ParseException ex)
-            {
-                Debug.WriteLine($"Conditional check failed in {prefixExpr}\nPower: {effect.GetPower()?.FullName}\r\n{ex.Message}");
-
-                return false;
-            }
-            catch (VariableNotDefinedException ex)
-            {
-                Debug.WriteLine($"Conditional check failed (variable not defined) in {prefixExpr}\nPower: {effect.GetPower()?.FullName}\r\n{ex.Message}");
-
-                return false;
-            }
-            catch (InvalidOperationException ex)
-            {
-                Debug.WriteLine($"Conditional check failed (invalid operation) in {prefixExpr}\nPower: {effect.GetPower()?.FullName}\r\n{ex.Message}");
-
-                return false;
+                var valid = effect.ValidateConditional(i);
+                if (i > 0 && effect.ActiveConditionals[i].Key.StartsWith("OR "))
+                {
+                    result |= andGroup;
+                    andGroup = valid;
+                }
+                else
+                {
+                    andGroup &= valid;
+                }
             }
 
-            return ret;
+            return result | andGroup;
         }
 
         /// <summary>

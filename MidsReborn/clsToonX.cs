@@ -26,6 +26,8 @@ namespace Mids_Reborn
         private const double BuildFormatChange2 = 1.39999997615814;
         private IPower?[] _buffedPowers = [];
         private IPower[] _mathPowers = [];
+        // Stable copies of incarnate/global boost source powers, read by the parallel enhancement passes
+        private IPower?[] _incarnateSources = [];
         private Enums.BuffsX _selfBuffs;
         private Enums.BuffsX _selfEnhance;
 
@@ -1861,10 +1863,51 @@ namespace Mids_Reborn
                 }
 
                 var effectType = Enums.eEffectType.Enhancement;
-                GBPA_ApplyIncarnateEnhancements(ref powerMath, hIDX, _mathPowers[index], false, ref effectType);
+                GBPA_ApplyIncarnateEnhancements(ref powerMath, hIDX, _incarnateSources[index], false, ref effectType);
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Snapshot the powers that can act as incarnate/global boost sources in
+        /// <see cref="GBPA_ApplyIncarnateEnhancements"/>, before the per-power passes run.
+        /// The passes run in parallel and mutate Math_Mag/Math_Duration of every power in place,
+        /// so reading another entry of _mathPowers from there would depend on scheduling.
+        /// Sources are read with their unenhanced values (Math_Mag/Math_Duration reset).
+        /// Powers that cannot qualify as a source are left null (they contribute nothing).
+        /// </summary>
+        private IPower?[] GBPA_SnapshotIncarnateSources()
+        {
+            var sources = new IPower?[_mathPowers.Length];
+            for (var i = 0; i < _mathPowers.Length; i++)
+            {
+                var power = _mathPowers[i];
+                if (power == null)
+                {
+                    continue;
+                }
+
+                if (power.PowerType != Enums.ePowerType.GlobalBoost &&
+                    !power.Effects.Any(fx => fx.Absorbed_Effect && fx.Absorbed_PowerType == Enums.ePowerType.GlobalBoost))
+                {
+                    continue;
+                }
+
+                IPower source = new Power(power);
+                for (var fxIdx = 0; fxIdx < source.Effects.Length; fxIdx++)
+                {
+                    var fx = source.Effects[fxIdx];
+                    fx.Math_Mag = 0;
+                    fx.Math_Duration = 0;
+                    // Not carried over by the Effect copy constructor, needed to resolve the granting power's enhancements
+                    fx.Absorbed_Power_nID = power.Effects[fxIdx].Absorbed_Power_nID;
+                }
+
+                sources[i] = source;
+            }
+
+            return sources;
         }
 
         private static bool GBPA_Pass2_ApplyED(ref IPower powerMath)
@@ -2080,7 +2123,7 @@ namespace Mids_Reborn
                 if (!(CurrentBuild.Powers[index].StatInclude & CurrentBuild.Powers[index].NIDPower > -1))
                     continue;
                 var effectType = Enums.eEffectType.Enhancement;
-                GBPA_ApplyIncarnateEnhancements(ref powerMath, hIDX, _mathPowers[index], true, ref effectType);
+                GBPA_ApplyIncarnateEnhancements(ref powerMath, hIDX, _incarnateSources[index], true, ref effectType);
             }
 
             return true;
@@ -2205,6 +2248,8 @@ namespace Mids_Reborn
             GenerateModifyEffectsArray();
 
             GenerateBuffData(ref _selfEnhance, true);
+
+            _incarnateSources = GBPA_SnapshotIncarnateSources();
 
             Parallel.For(0, _mathPowers.Length, hIDX =>
             {
