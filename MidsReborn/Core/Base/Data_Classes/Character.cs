@@ -622,11 +622,7 @@ namespace Mids_Reborn.Core.Base.Data_Classes
                     }
                 }
 
-                if (!power.Power.HasAttribModEffects()) continue;
-                foreach (var effect in power.Power.Effects)
-                {
-                    effect.UpdateAttrib();
-                }
+                // ModifyAttrib changes are applied to each calculation's copy (ApplyModifyEffects), never to the shared database power
             }
 
             foreach (var power in CurrentBuild.Powers)

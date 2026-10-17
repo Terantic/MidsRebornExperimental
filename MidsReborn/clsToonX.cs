@@ -2425,6 +2425,7 @@ namespace Mids_Reborn
             var powerMath = GBPA_SubPass0_AssemblePowerEntry(nIDPower, iPower);
             powerMath = new Power(DatabaseAPI.GetPowerByFullName(powerMath.FullName));
             powerMath?.ProcessExecutes();
+            powerMath?.ApplyModifyEffects();
             powerMath?.AbsorbPetEffects();
 
             return powerMath;
