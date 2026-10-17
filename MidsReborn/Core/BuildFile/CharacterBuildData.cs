@@ -301,30 +301,68 @@ namespace Mids_Reborn.Core.BuildFile
                 return false;
             }
 
+            // Unknown power and enhancement names are skipped by LoadBuild, only reject what it can't read
+            foreach (var powerData in PowerEntries)
+            {
+                if (powerData == null) continue;
+                if (powerData.SubPowerEntries == null || powerData.SubPowerEntries.Any(x => x == null) || powerData.SlotEntries == null || powerData.SlotEntries.Any(x => x == null))
+                {
+                    error = $"Invalid power entry: {powerData.PowerName}";
+                    return false;
+                }
+
+                if (!string.IsNullOrWhiteSpace(powerData.PowerName) && DatabaseAPI.PiDFromUidPower(powerData.PowerName) > -1 && !IsValidLevel(powerData.Level))
+                {
+                    error = $"Invalid level for {powerData.PowerName}: {powerData.Level}";
+                    return false;
+                }
+
+                if (powerData.SlotEntries.Any(x => !IsValidLevel(x.Level) || !IsValidEnhancement(x.Enhancement) || !IsValidEnhancement(x.FlippedEnhancement)))
+                {
+                    error = $"Invalid slot in {powerData.PowerName}";
+                    return false;
+                }
+            }
+
             error = string.Empty;
             return true;
+        }
+
+        // Levels are saved one-based (see Update), 0 being an unset level
+        private static bool IsValidLevel(int level)
+        {
+            return level >= 0 && level <= Character.MaxLevel + 1;
+        }
+
+        // Same rule as LoadEnhancementData: grade and relative level are only read for a known enhancement
+        private static bool IsValidEnhancement(EnhancementData? enhData)
+        {
+            if (enhData == null || DatabaseAPI.GetEnhancementByUIDName(enhData.Uid) < 0) return true;
+
+            return (string.IsNullOrWhiteSpace(enhData.Grade) || Enum.TryParse<Enums.eEnhGrade>(enhData.Grade, out var grade) && Enum.IsDefined(grade)) &&
+                   (string.IsNullOrWhiteSpace(enhData.RelativeLevel) || Enum.TryParse<Enums.eEnhRelative>(enhData.RelativeLevel, out var relativeLevel) && Enum.IsDefined(relativeLevel));
         }
 
         internal bool LoadBuild()
         {
             InherentPowers = new List<PowerEntry>();
 
-            var atNiD = DatabaseAPI.NidFromUidClass(Class);
-            var atOrigin = Math.Max(DatabaseAPI.NidFromUidOrigin(Origin, atNiD), 0);
-            MidsContext.Character.Reset(DatabaseAPI.Database.Classes[atNiD], atOrigin);
-            MidsContext.Character.Alignment = Enum.Parse<Enums.Alignment>(Alignment);
-            MidsContext.Character.Name = Name;
-            MidsContext.Character.Comment = Comment ?? string.Empty;
-            MidsContext.Character.LoadPowerSetsByName(PowerSets);
-            // Saved one-based (see Update); keep the layout's own value if the file's is out of range
-            var lastPower = LastPower - 1;
-            if (lastPower >= 0 && lastPower <= MidsContext.Character.CurrentBuild!.LastPower)
-            {
-                MidsContext.Character.CurrentBuild.LastPower = lastPower;
-            }
-
             try
             {
+                var atNiD = DatabaseAPI.NidFromUidClass(Class);
+                var atOrigin = Math.Max(DatabaseAPI.NidFromUidOrigin(Origin, atNiD), 0);
+                MidsContext.Character.Reset(DatabaseAPI.Database.Classes[atNiD], atOrigin);
+                MidsContext.Character.Alignment = Enum.Parse<Enums.Alignment>(Alignment);
+                MidsContext.Character.Name = Name ?? string.Empty;
+                MidsContext.Character.Comment = Comment ?? string.Empty;
+                MidsContext.Character.LoadPowerSetsByName(PowerSets);
+                // Saved one-based (see Update); keep the layout's own value if the file's is out of range
+                var lastPower = LastPower - 1;
+                if (lastPower >= 0 && lastPower <= MidsContext.Character.CurrentBuild!.LastPower)
+                {
+                    MidsContext.Character.CurrentBuild.LastPower = lastPower;
+                }
+
                 for (var powerIndex = 0; powerIndex < PowerEntries.Count; powerIndex++)
                 {
                     var powerEntryData = PowerEntries[powerIndex];
@@ -370,7 +408,7 @@ namespace Mids_Reborn.Core.BuildFile
                                 powerEntry.SubPowers[subPowerIndex] = powerSubEntry;
 
                                 powerSubEntry.nIDPower = DatabaseAPI.PiDFromUidPower(subEntry.PowerName);
-                                var subPower = DatabaseAPI.Database.Power[powerSubEntry.nIDPower];
+                                var subPower = powerSubEntry.nIDPower > -1 ? DatabaseAPI.Database.Power[powerSubEntry.nIDPower] : null;
 
                                 if (powerSubEntry.nIDPower > -1)
                                 {
@@ -470,15 +508,17 @@ namespace Mids_Reborn.Core.BuildFile
                 {
                     MidsContext.Character.CurrentBuild.Powers.Add(entry);
                 }
+
+                MidsContext.Archetype = MidsContext.Character.Archetype;
+                MidsContext.Character.Validate();
+                MidsContext.Character.Lock();
             }
             catch (Exception ex)
             {
                 _notifier.ShowError($"An error occurred while attempting to read the build data.\r\n{ex.Message}\r\n{ex.StackTrace}");
                 return false;
             }
-            MidsContext.Archetype = MidsContext.Character.Archetype;
-            MidsContext.Character.Validate();
-            MidsContext.Character.Lock();
+
             return true;
         }
 

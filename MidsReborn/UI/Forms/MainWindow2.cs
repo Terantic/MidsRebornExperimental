@@ -1457,13 +1457,15 @@ namespace Mids_Reborn.UI.Forms
 
             // The active build is only cleared once the file has been read and validated
             var replaced = false;
-            if (_buildManager.LoadFromFile(fileName, () =>
-                {
-                    DataViewLocked = false;
-                    NewToon(true, true);
-                    replaced = true;
-                    return true;
-                }))
+            var modified = FileModified;
+            var loaded = _buildManager.LoadFromFile(fileName, () =>
+            {
+                DataViewLocked = false;
+                NewToon(true, true);
+                replaced = true;
+                return true;
+            });
+            if (loaded)
             {
                 if (!asTemplate)
                 {
@@ -1473,25 +1475,20 @@ namespace Mids_Reborn.UI.Forms
             }
             else
             {
-                if (!asTemplate)
+                if (!asTemplate && MidsContext.Config.LastFileName == fileName)
                 {
-                    if (replaced)
-                    {
-                        // The previous build is gone, don't let a save overwrite its file
-                        LastFileName = string.Empty;
-                        MidsContext.Config.LastFileName = string.Empty;
-                    }
-                    else if (MidsContext.Config.LastFileName == fileName)
-                    {
-                        // Unreadable file, don't try it again on next start
-                        MidsContext.Config.LastFileName = string.Empty;
-                    }
+                    // Unreadable file, don't try it again on next start
+                    MidsContext.Config.LastFileName = string.Empty;
                 }
-                
-                return false;
+
+                // If the build was cleared before the load failed, BuildManager put it back: show it again below
+                if (!replaced)
+                {
+                    return false;
+                }
             }
 
-            FileModified = false;
+            FileModified = !loaded && modified;
             if (drawing != null)
             {
                 drawing.Highlight = -1;
@@ -1509,7 +1506,7 @@ namespace Mids_Reborn.UI.Forms
             DoRedraw();
             FloatUpdate(true);
             
-            return true;
+            return loaded;
         }
 
         private bool DoOpen(string? fName, bool asTemplate = false)
@@ -6411,6 +6408,8 @@ The default position/state will be used upon next launch.", @"Window State Warni
         private void tsImportChunk_Click(object? sender, EventArgs e)
         {
             var loaded = false;
+            var replaced = false;
+            var modified = FileModified;
             using var importBuild = new ImportCode();
             var result = importBuild.ShowDialog(this);
             if (result == DialogResult.OK)
@@ -6431,15 +6430,21 @@ The default position/state will be used upon next launch.", @"Window State Warni
 
                     DataViewLocked = false;
                     NewToon(true, true);
-                    // Imported data has no local file, the first save must ask where to put it
-                    LastFileName = "";
-                    MidsContext.Config.LastFileName = "";
+                    replaced = true;
                     return true;
                 });
             }
 
-            if (!loaded) return;
-            FileModified = false;
+            // If the build was cleared before the load failed, BuildManager put it back: show it again
+            if (!loaded && !replaced) return;
+            if (loaded)
+            {
+                // Imported data has no local file, the first save must ask where to put it
+                LastFileName = "";
+                MidsContext.Config.LastFileName = "";
+            }
+
+            FileModified = !loaded && modified;
             SetTitleBar();
             SetLockedPoolsState();
             if (drawing != null) drawing.Highlight = -1;
@@ -6458,17 +6463,26 @@ The default position/state will be used upon next launch.", @"Window State Warni
             }
 
             // SharedBuilds already asked before replacing the current build; keep it if the fetched one can't be loaded
+            var replaced = false;
+            var modified = FileModified;
             var loaded = _buildManager.ValidateAndLoadSchemaData(vsb.FetchedData.Data, vsb.FetchedData.Id, () =>
             {
                 DataViewLocked = false;
                 NewToon(true, true);
+                replaced = true;
+                return true;
+            });
+
+            // If the build was cleared before the load failed, BuildManager put it back: show it again
+            if (!loaded && !replaced) return;
+            if (loaded)
+            {
                 // A shared build has no local file yet, the first save must ask where to put it
                 LastFileName = "";
                 MidsContext.Config.LastFileName = "";
-                return true;
-            });
-            if (!loaded) return;
-            FileModified = false;
+            }
+
+            FileModified = !loaded && modified;
             SetTitleBar();
             SetLockedPoolsState();
             if (drawing != null)
