@@ -2414,9 +2414,10 @@ namespace Mids_Reborn.Core.Base.Data_Classes
                         ? fx.nDuration
                         : sFx.nDuration;
                     sFx.DelayedTime += fx.DelayedTime;
-                    sFx.Probability = fx.Probability is 0 or 1
+                    // Independent rolls: chance to execute the power times the effect's own chance
+                    sFx.EffectiveProbability = fx.Probability is 0 or 1
                         ? sFx.Probability
-                        : Math.Min(sFx.Probability, fx.Probability);
+                        : sFx.Probability * fx.Probability;
                     sFx.ProcsPerMinute = fx.ProcsPerMinute;
                     if (fx.ActiveConditionals is { Count: > 0 })
                     {
