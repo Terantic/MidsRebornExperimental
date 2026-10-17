@@ -11,7 +11,8 @@ namespace Mids_Reborn
         {
             var sPowerLine = new sPowerLine();
             var strArray1 = SmartBreak(iLine, nAT);
-            sPowerLine.Level = Convert.ToInt32(strArray1[0]);
+            // A line without a level isn't a power line, level 0 is skipped
+            int.TryParse(strArray1[0], out sPowerLine.Level);
             sPowerLine.Power = strArray1[1];
             sPowerLine.Slots = Array.Empty<sSlot>();
             var strArray2 = strArray1[2].Replace(" ", "|").Replace(")", "|").Split('|');
@@ -54,9 +55,14 @@ namespace Mids_Reborn
                 Array.Resize(ref sPowerLine.Slots, sPowerLine.Slots.Length + 1);
                 //sPowerLine.Slots = (sSlot[]) Utils.CopyArray(sPowerLine.Slots, new sSlot[sPowerLine.Slots.Length + 1]);
                 sPowerLine.Slots[^1].Enh = iStr.Substring(0, num2).Trim();
-                sPowerLine.Slots[^1].Level = Convert.ToInt32(iStr.Substring(startIndex).Trim());
-                if (iStr.Substring(startIndex).Trim().StartsWith("A"))
+                // (A) is the automatic slot, placed at the power's level
+                var slotLevel = iStr.Substring(startIndex).Trim();
+                if (slotLevel.StartsWith("A"))
                     sPowerLine.Slots[^1].Level = sPowerLine.Level;
+                else if (int.TryParse(slotLevel, out var level))
+                    sPowerLine.Slots[^1].Level = level;
+                else
+                    throw new FormatException($"Invalid slot level '{slotLevel}' in: {iLine}");
                 sPowerLine.Slots[^1].PowerName = sPowerLine.Power;
             }
 
@@ -114,7 +120,7 @@ namespace Mids_Reborn
             for (var index = 0; index <= num; ++index)
             {
                 var strArray = SmartBreak(haystack[index], iAT);
-                if (Convert.ToInt32(strArray[0]) > 0.0 && strArray[1].Length > 0 &&
+                if (int.TryParse(strArray[0], out var level) && level > 0 && strArray[1].Length > 0 &&
                     FindPower(strArray[1], iAT).Powerset > -1)
                     return index;
             }

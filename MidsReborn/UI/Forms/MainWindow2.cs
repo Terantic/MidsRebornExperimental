@@ -3618,6 +3618,7 @@ The default position/state will be used upon next launch.", @"Window State Warni
                 else
                 {
                     var str = !MainModule.MidsController.Toon.Locked ? MidsContext.Character.Name : string.Empty;
+                    var comment = !MainModule.MidsController.Toon.Locked ? MidsContext.Character.Comment : string.Empty;
                     MidsContext.Character.Reset((Archetype)cbAT.SelectedItem, cbOrigin.SelectedIndex);
                     if (MidsContext.Character.Powersets[0].nIDLinkSecondary > -1)
                     {
@@ -3626,6 +3627,7 @@ The default position/state will be used upon next launch.", @"Window State Warni
                     }
 
                     MidsContext.Character.Name = str;
+                    MidsContext.Character.Comment = comment;
                 }
 
                 if (fAccolade is { IsDisposed: false })
