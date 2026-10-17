@@ -79,6 +79,11 @@ public sealed class NativeWindowUIManager : IUIManager
         ModernWindow.Instance?.PostTriggerRollback();
     }
 
+    public void DisableCancel()
+    {
+        ModernWindow.Instance?.PostDisableCancel();
+    }
+
     public void StartCleanup()
     {
         ModernWindow.Instance?.PostStartCleanup();

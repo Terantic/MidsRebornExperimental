@@ -43,6 +43,16 @@ public sealed class PatchFlowManager : IPatchFlowManager
             _logger.LogInformation("Starting patch for: {Name} ({Type}) -> {File}", entry.Name, entry.Type, entry.File);
 
 
+            // Manifest values are untrusted: Name becomes a folder name and File a download file name,
+            // so both must be single plain path segments before they are used to build local paths.
+            if (!PathSafety.IsSafeSegment(entry.Name) || !PathSafety.IsSafeSegment(entry.File))
+            {
+                _logger.LogError("Rejected manifest entry with unsafe Name '{Name}' or File '{File}'", entry.Name, entry.File);
+                _ui.TriggerFailure();
+                await _ui.ShowStatusAsync("Update failed.", 1500, false, CancellationToken.None);
+                return -1;
+            }
+
             string baseDir = AppContext.BaseDirectory;
             string baseUrl = entry.SourceUri.EndsWith("/") ? entry.SourceUri : $"{entry.SourceUri}/";
 
@@ -50,17 +60,21 @@ public sealed class PatchFlowManager : IPatchFlowManager
                 ? baseDir
                 : Path.Combine(baseDir, "Databases", entry.Name);
 
-            string patchPath = Path.Combine(baseDir, entry.File);
+            // Downloads go to a folder owned by this operation, so cleanup never touches pre-existing files
+            string downloadPath = Path.Combine(baseDir, "Staging", $"download_{Guid.NewGuid():N}");
+            string patchPath = Path.Combine(downloadPath, entry.File);
             string hashPath = Path.ChangeExtension(patchPath, ".hash");
 
             string stagingPath = Path.Combine(baseDir, "Staging", entry.Name);
-            string backupPath = Path.Combine(baseDir, "Backup", entry.Name);
+            string backupPath = BackupManager.GetBackupPath(baseDir, entry.Type, entry.Name);
 
             bool installing = false;
             bool backupMade = false;
 
             try
             {
+                Directory.CreateDirectory(downloadPath);
+
                 // STEP 1: Get Patch Size
                 _logger.LogInformation("Step 1: Checking local or remote patch size.");
                 if (_downloader.TryGetLocalFileSize(patchPath, out long localSize))
@@ -92,7 +106,10 @@ public sealed class PatchFlowManager : IPatchFlowManager
                         cancellationToken);
 
                     if (!ok)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
                         throw new Exception("Failed to download patch.");
+                    }
                 }
 
                 // STEP 3: Download Hash
@@ -110,7 +127,10 @@ public sealed class PatchFlowManager : IPatchFlowManager
                         cancellationToken);
 
                     if (!ok)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
                         throw new Exception("Failed to download hash file.");
+                    }
                 }
 
                 // STEP 4: Decompress
@@ -119,22 +139,29 @@ public sealed class PatchFlowManager : IPatchFlowManager
 
                 List<FileEntry> files = await _decompressor.DecompressAsync(patchPath, cancellationToken);
                 if (files.Count == 0)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
                     throw new Exception("Decompression yielded no files.");
+                }
 
                 // STEP 5: Stage
                 _logger.LogInformation("Step 5: Staging files.");
                 await _ui.ShowStatusAsync("Staging files...", 500, false, cancellationToken);
+                TryDelete(stagingPath, recursive: true); // Leftovers from an interrupted run
                 Directory.CreateDirectory(stagingPath);
 
                 bool staged = await _stager.WriteStagingFilesAsync(files, stagingPath, cancellationToken);
                 if (!staged)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
                     throw new Exception("Failed to stage patch files.");
+                }
 
                 // STEP 6: Validate
                 _logger.LogInformation("Step 6: Validating staged files.");
                 await _ui.ShowStatusAsync("Validating update...", 500, true, cancellationToken);
 
-                bool valid = await _validator.ValidateAsync(stagingPath, hashPath, cancellationToken);
+                bool valid = await _validator.ValidateAsync(files, stagingPath, hashPath, cancellationToken);
                 if (!valid)
                     throw new Exception("Patch validation failed.");
 
@@ -162,7 +189,10 @@ public sealed class PatchFlowManager : IPatchFlowManager
                 bool backupOk = await _backupManager.CreateBackupAsync(installPath, backupPath, entry.Type, entry.Name,
                     cancellationToken);
                 if (!backupOk)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
                     throw new Exception("Failed to create backup.");
+                }
 
                 backupMade = true;
 
@@ -170,51 +200,55 @@ public sealed class PatchFlowManager : IPatchFlowManager
                 _logger.LogInformation("Step 9: Preparing for installation.");
                 await _ui.ShowStatusAsync("Preparing installation...", 500, false, cancellationToken);
 
+                // Last cancellation point. Installation (and any rollback it needs) always runs to
+                // completion, so everything below uses CancellationToken.None.
+                cancellationToken.ThrowIfCancellationRequested();
+                _ui.DisableCancel();
+
                 // STEP 10: Apply
                 _logger.LogInformation("Step 10: Applying patch.");
-                await _ui.ShowStatusAsync("Installing update...", 500, true, cancellationToken);
+                await _ui.ShowStatusAsync("Installing update...", 500, true, CancellationToken.None);
                 installing = true;
 
                 bool installed = await _pipeline.RunStepAsync("Apply patch", () =>
-                    _stager.ApplyStagedFilesAsync(files, installPath, stagingPath, cancellationToken));
+                    _stager.ApplyStagedFilesAsync(files, installPath, stagingPath, CancellationToken.None));
                 if (!installed)
                     throw new Exception("Failed to apply patch.");
 
                 // STEP 11: Final Cleanup
                 _logger.LogInformation("Step 11: Cleaning up temporary files.");
-                await _ui.ShowStatusAsync("Cleaning up...", 250, false, cancellationToken);
+                await _ui.ShowStatusAsync("Cleaning up...", 250, false, CancellationToken.None);
 
-                TryDelete(patchPath);
-                TryDelete(hashPath);
+                TryDelete(downloadPath, recursive: true);
                 TryDelete(stagingPath, recursive: true);
 
-                await _ui.ShowStatusAsync("Update complete.", 1500, false, cancellationToken);
+                await _ui.ShowStatusAsync("Update complete.", 1500, false, CancellationToken.None);
                 return 0;
             }
             catch (OperationCanceledException)
             {
                 _logger.LogWarning("Patch cancelled by user for {Name} {Version} ({Type})", entry.Name, entry.Version, entry.Type);
                 _ui.TriggerCancel();
-                await _ui.ShowStatusAsync("Update cancelled.", 1000, false, cancellationToken);
+                await _ui.ShowStatusAsync("Update cancelled.", 1000, false, CancellationToken.None);
                 return -1;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Patch failed for {Name} {Version} ({Type})", entry.Name, entry.Version, entry.Type);
                 _ui.TriggerFailure();
-                await _ui.ShowStatusAsync("Update failed.", 1500, false, cancellationToken);
+                await _ui.ShowStatusAsync("Update failed.", 1500, false, CancellationToken.None);
 
                 if (installing && backupMade)
                 {
-                    await RollbackAsync(installPath, backupPath, entry.Type, entry.Name, cancellationToken);
+                    await RollbackAsync(installPath, backupPath, entry.Type, entry.Name);
                 }
 
                 return -1;
             }
             finally
             {
-                TryDelete(patchPath);
-                TryDelete(hashPath);
+                // Only folders this operation owns: its download folder and the updater staging folder
+                TryDelete(downloadPath, recursive: true);
                 TryDelete(stagingPath, recursive: true);
                 _ui.ShowProgressBar(false);
                 _ui.UpdateProgress(0f);
@@ -222,24 +256,25 @@ public sealed class PatchFlowManager : IPatchFlowManager
         }
     }
 
-    private async Task RollbackAsync(string installPath, string backupPath, string patchType, string name, CancellationToken cancellationToken)
+    // Mandatory recovery: deliberately not cancellable
+    private async Task RollbackAsync(string installPath, string backupPath, string patchType, string name)
     {
         _logger.LogWarning("Attempting rollback to {Backup}", backupPath);
 
         _ui.TriggerRollback();
-        await _ui.ShowStatusAsync("Rolling back...", 500, true, cancellationToken);
+        await _ui.ShowStatusAsync("Rolling back...", 500, true, CancellationToken.None);
         _ui.UpdateProgress(0f);
 
-        bool restored = await _backupManager.RestoreBackupAsync(installPath, backupPath, patchType, name, cancellationToken);
+        bool restored = await _backupManager.RestoreBackupAsync(installPath, backupPath, patchType, name, CancellationToken.None);
         if (restored)
         {
             _logger.LogInformation("Rollback complete for {Name}", name);
-            await _ui.ShowStatusAsync("Rollback complete.", 1500, false, cancellationToken);
+            await _ui.ShowStatusAsync("Rollback complete.", 1500, false, CancellationToken.None);
         }
         else
         {
             _logger.LogError("Rollback failed for {Name}", name);
-            await _ui.ShowStatusAsync("Rollback failed.", 1500, false, cancellationToken);
+            await _ui.ShowStatusAsync("Rollback failed.", 1500, false, CancellationToken.None);
         }
     }
 

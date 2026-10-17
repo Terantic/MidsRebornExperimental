@@ -1,6 +1,7 @@
 ﻿using ICSharpCode.SharpZipLib.Zip.Compression;
 using Microsoft.Extensions.Logging;
 using MRB_Boostrap.Models;
+using MRB_Boostrap.Utilities;
 
 namespace MRB_Boostrap.Services;
 
@@ -56,7 +57,11 @@ public sealed class FileDecompressor : IFileDecompressor
             }
 
             if (!inflater.IsFinished)
-                _logger.LogWarning("Inflater finished prematurely. Output may be incomplete.");
+            {
+                // A truncated stream must never be treated as a usable (partial) archive
+                _logger.LogError("Inflater finished prematurely. Compressed data is incomplete: {Path}", filePath);
+                return result;
+            }
         }
         catch (Exception ex)
         {
@@ -89,7 +94,14 @@ public sealed class FileDecompressor : IFileDecompressor
                     uint dataLength = reader.ReadUInt32();
                     string fileName = ReadDotNetString(reader);
                     string directory = NormalizeDirectory(ReadDotNetString(reader));
+
+                    long remaining = uncompressed.Length - uncompressed.Position;
+                    if (dataLength > remaining)
+                        throw new InvalidDataException($"Entry declares {dataLength} bytes but only {remaining} remain.");
+
                     byte[] data = reader.ReadBytes((int)dataLength);
+                    if (data.Length != dataLength)
+                        throw new EndOfStreamException($"Short payload: expected {dataLength} bytes, read {data.Length}.");
 
                     result.Add(new FileEntry
                     {
@@ -101,31 +113,41 @@ public sealed class FileDecompressor : IFileDecompressor
                     _logger.LogInformation("Parsed file [{Index}/{Total}]: {Dir}/{File} ({Size:N0} bytes)",
                         i + 1, fileCount, directory, fileName, data.Length);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is not OperationCanceledException)
                 {
                     _logger.LogError(ex, "Error parsing file entry {Index}", i);
                     break;
                 }
             }
+
+            // All-or-nothing: an incomplete archive yields no entries so callers never act on partial data
             if (result.Count != fileCount)
             {
-                _logger.LogWarning("Parsed only {Count} of {Expected} files from: {Path}", result.Count, fileCount, filePath);
+                _logger.LogError("Parsed only {Count} of {Expected} files from: {Path}. Rejecting archive.", result.Count, fileCount, filePath);
+                result.Clear();
+            }
+            else if (uncompressed.Position != uncompressed.Length)
+            {
+                _logger.LogError("Unexpected trailing data after {Count} entries in: {Path}. Rejecting archive.", fileCount, filePath);
+                result.Clear();
             }
             else
             {
                 _logger.LogInformation("Decompression complete. Parsed {Count} files from: {Path}", result.Count, filePath);
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogError(ex, "Error reading decompressed data from {Path}", filePath);
+            result.Clear();
         }
 
         return result;
     }
 
-    private static string NormalizeDirectory(string dir) =>
-        dir.Replace('/', Path.DirectorySeparatorChar).TrimStart(Path.DirectorySeparatorChar);
+    // Shared with hash validation so archive and hash entries normalize identically.
+    // Containment is enforced by the consumers (staging, install, restore) via PathSafety.
+    private static string NormalizeDirectory(string dir) => PathSafety.NormalizeRelative(dir);
 
     private static string ReadDotNetString(BinaryReader reader)
     {
@@ -134,6 +156,9 @@ public sealed class FileDecompressor : IFileDecompressor
             throw new InvalidDataException($"Invalid string length: {length}");
 
         byte[] bytes = reader.ReadBytes(length);
+        if (bytes.Length != length)
+            throw new EndOfStreamException($"Short string: expected {length} bytes, read {bytes.Length}.");
+
         return System.Text.Encoding.UTF8.GetString(bytes);
     }
 

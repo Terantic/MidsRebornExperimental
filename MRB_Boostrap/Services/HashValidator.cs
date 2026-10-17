@@ -1,7 +1,9 @@
 ﻿using System.Security.Cryptography;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
+using MRB_Boostrap.Models;
 using MRB_Boostrap.UI;
+using MRB_Boostrap.Utilities;
 
 namespace MRB_Boostrap.Services;
 
@@ -18,7 +20,7 @@ public sealed class HashValidator : IHashValidator
         _ui = ui;
     }
 
-    public async Task<bool> ValidateAsync(string stagingPath, string hashPath, CancellationToken cancellationToken)
+    public async Task<bool> ValidateAsync(List<FileEntry> files, string stagingPath, string hashPath, CancellationToken cancellationToken)
     {
         if (!File.Exists(hashPath))
         {
@@ -50,37 +52,80 @@ public sealed class HashValidator : IHashValidator
             return false;
         }
 
+        // Require an exact one-to-one match between hash entries and archive entries so that
+        // every file that will be installed is covered by a hash, and nothing listed is missing.
+        var expected = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (HashEntry entry in entries)
+        {
+            if (!PathSafety.TryGetRelativeFilePath(entry.Directory, entry.FileName, out string rel) || string.IsNullOrWhiteSpace(entry.Hash))
+            {
+                _logger.LogError("Validation failed: Invalid hash entry '{Dir}' / '{File}'", entry.Directory, entry.FileName);
+                _ui.UpdateStatus("Invalid hash file.");
+                return false;
+            }
+
+            if (!expected.TryAdd(rel, entry.Hash))
+            {
+                _logger.LogError("Validation failed: Duplicate hash entry for '{Path}'", rel);
+                _ui.UpdateStatus("Invalid hash file.");
+                return false;
+            }
+        }
+
+        var archived = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (FileEntry file in files)
+        {
+            if (!PathSafety.TryGetRelativeFilePath(file.Directory, file.FileName, out string rel) || !archived.Add(rel))
+            {
+                _logger.LogError("Validation failed: Invalid or duplicate archive entry '{Dir}' / '{File}'", file.Directory, file.FileName);
+                _ui.UpdateStatus("Validation failed.");
+                return false;
+            }
+
+            if (!expected.ContainsKey(rel))
+            {
+                _logger.LogError("Validation failed: Archive entry '{Path}' has no hash entry", rel);
+                _ui.UpdateStatus("Validation failed.");
+                return false;
+            }
+        }
+
+        if (archived.Count != expected.Count)
+        {
+            _logger.LogError("Validation failed: Hash file lists {Expected} files but archive contains {Actual}", expected.Count, archived.Count);
+            _ui.UpdateStatus("Validation failed.");
+            return false;
+        }
+
         _ui.UpdateStatus("Validating files...");
         _ui.ShowProgressBar(true);
         _ui.UpdateProgress(0f);
 
-        int total = entries.Count;
-        for (int i = 0; i < total; i++)
+        int total = expected.Count;
+        int i = 0;
+        foreach ((string rel, string hash) in expected)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            HashEntry entry = entries[i];
-            string fullPath = Path.Combine(stagingPath, entry.Directory ?? "", entry.FileName ?? "");
-
-            if (!File.Exists(fullPath))
+            if (!PathSafety.TryResolveUnderRoot(stagingPath, rel, out string fullPath) || !File.Exists(fullPath))
             {
-                _logger.LogError("Validation failed: Missing file '{File}' in staging path '{Staging}'", entry.FileName, stagingPath);
+                _logger.LogError("Validation failed: Missing file '{File}' in staging path '{Staging}'", rel, stagingPath);
                 _ui.UpdateStatus("Validation failed.");
                 return false;
             }
 
             string actualHash = await ComputeSha256Async(fullPath, cancellationToken);
 
-            if (!actualHash.Equals(entry.Hash, StringComparison.OrdinalIgnoreCase))
+            if (!actualHash.Equals(hash, StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogError("Validation failed: Hash mismatch for file '{File}' in directory '{Dir}'", entry.FileName, entry.Directory);
-                _logger.LogError("  Expected: {Expected}", entry.Hash);
+                _logger.LogError("Validation failed: Hash mismatch for file '{File}'", rel);
+                _logger.LogError("  Expected: {Expected}", hash);
                 _logger.LogError("  Actual  : {Actual}", actualHash);
                 _ui.UpdateStatus("Validation failed (hash mismatch).");
                 return false;
             }
 
-            _ui.UpdateProgress((float)(i + 1) / total);
+            _ui.UpdateProgress((float)++i / total);
         }
 
         _logger.LogInformation("Validation passed for all files.");

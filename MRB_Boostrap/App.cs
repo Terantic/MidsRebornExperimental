@@ -22,21 +22,32 @@ public sealed class App
         _logger = logger;
     }
 
-    public async Task RunAsync()
+    public async Task RunAsync(CancellationToken cancellationToken = default)
     {
+        // Mids Reborn stays closed until every selected entry is applied; restarting between
+        // entries would load a half-updated install (e.g. new app with the old database).
         foreach (var entry in _entries)
         {
-            int result = await _flowManager.ExecutePatchFlowAsync(entry);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                _logger.LogWarning("Update cancelled before {Name}. Skipping restart.", entry.Name);
+                return;
+            }
+
+            int result = await _flowManager.ExecutePatchFlowAsync(entry, cancellationToken);
             if (result != 0)
             {
                 _logger.LogWarning("Patch failed for {Name}. Skipping restart.", entry.Name);
                 return;
             }
-
-            _ui.UpdateStatus("Restarting Mids Reborn...");
-            await Task.Delay(1000);
-
-            ProcessUtils.StartMidsReborn();
         }
+
+        if (_entries.Count == 0)
+            return;
+
+        _ui.UpdateStatus("Restarting Mids Reborn...");
+        await Task.Delay(1000, CancellationToken.None);
+
+        ProcessUtils.StartMidsReborn();
     }
 }

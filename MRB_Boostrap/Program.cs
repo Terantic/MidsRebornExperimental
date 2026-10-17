@@ -11,6 +11,8 @@ namespace MRB_Boostrap;
 
 internal class Program
 {
+    private const string OperationMutexName = @"Local\MidsReborn.MRBBootstrap.Operation";
+
     [STAThread]
     public static void Main(string[] args)
     {
@@ -131,6 +133,19 @@ internal class Program
             using var host = builder.Build();
             var services = host.Services;
 
+            // Only one patch or rollback may modify the installation at a time
+            using var operationMutex = new Mutex(true, OperationMutexName, out bool ownsOperation);
+            if (!parsedArgs.IsUiTest && !ownsOperation)
+            {
+                Log.Logger.Warning("Another bootstrapper operation is already running. Exiting.");
+                MessageBox.Show("Another Mids Reborn update or rollback is already in progress.", "Bootstrapper", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            // Cancel button -> operation token. Cancel is signalled off the UI thread so token
+            // callbacks never run worker code on the message loop.
+            using var operationCts = new CancellationTokenSource();
+
             ModernWindow window;
             switch (parsedArgs.Mode)
             {
@@ -141,6 +156,7 @@ internal class Program
                     {
                         Log.Logger.Information("Creating ModernWindow for patch...");
                         window = new ModernWindow();
+                        window.CancelRequested += () => Task.Run(operationCts.Cancel);
                         Log.Logger.Information("ModernWindow created.");
                     }
                     catch (Exception ex)
@@ -155,9 +171,8 @@ internal class Program
                         try
                         {
                             Log.Logger.Information("Starting patch process...");
-                                await services.GetRequiredService<App>().RunAsync();
+                            await services.GetRequiredService<App>().RunAsync(operationCts.Token);
                             Log.Logger.Information("Patch complete. Closing UI.");
-                            window.PostCloseWindow();
                         }
                         catch (Exception ex)
                         {
@@ -177,6 +192,9 @@ internal class Program
                             {
                                 Log.Logger.Warning(ex, "Failed to delete manifest file.");
                             }
+
+                            // Always close, so a failed run cannot leave the process waiting on the window
+                            window.PostCloseWindow();
                         }
                     });
 
@@ -193,6 +211,7 @@ internal class Program
                     {
                         Log.Logger.Information("Creating ModernWindow for rollback...");
                         window = new ModernWindow();
+                        window.CancelRequested += () => Task.Run(operationCts.Cancel);
                         Log.Logger.Information("ModernWindow created.");
                     }
                     catch (Exception ex)
@@ -207,13 +226,16 @@ internal class Program
                         try
                         {
                             Log.Logger.Information("Starting rollback process...");
-                            await services.GetRequiredService<RestoreApp>().RunAsync();
+                            await services.GetRequiredService<RestoreApp>().RunAsync(operationCts.Token);
                             Log.Logger.Information("Rollback complete. Closing UI.");
-                            window.PostCloseWindow();
                         }
                         catch (Exception ex)
                         {
                             Log.Logger.Fatal(ex, "Fatal error during rollback.");
+                        }
+                        finally
+                        {
+                            window.PostCloseWindow();
                         }
                     });
 

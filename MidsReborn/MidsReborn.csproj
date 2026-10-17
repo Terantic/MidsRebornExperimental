@@ -807,7 +807,6 @@
 	<Target Name="RenameBootstrapperOutputs" AfterTargets="Build">
 		<PropertyGroup>
 			<_BootstrapBase>$(TargetDir)MRBBootstrap</_BootstrapBase>
-			<_BootstrapNew>$(TargetDir)New_MRBBootstrap</_BootstrapNew>
 		</PropertyGroup>
 
 		<ItemGroup>
@@ -818,9 +817,11 @@
 			<_BootstrapFiles Include="$(_BootstrapBase).deps.json" Condition="Exists('$(_BootstrapBase).deps.json')" />
 		</ItemGroup>
 
+		<!-- Prefix the full file name: %(Extension) alone would turn both
+		     .runtimeconfig.json and .deps.json into New_MRBBootstrap.json -->
 		<Copy
 			SourceFiles="@(_BootstrapFiles)"
-			DestinationFiles="@(_BootstrapFiles->'$(_BootstrapNew)%(Extension)')"
+			DestinationFiles="@(_BootstrapFiles->'$(TargetDir)New_%(Filename)%(Extension)')"
 			SkipUnchangedFiles="true" />
 
 		<Delete Files="@(_BootstrapFiles)" />

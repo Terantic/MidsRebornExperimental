@@ -2,6 +2,7 @@
 using MRB_Boostrap.Interop;
 using MRB_Boostrap.Models;
 using MRB_Boostrap.UI;
+using MRB_Boostrap.Utilities;
 using System.Runtime.InteropServices;
 
 namespace MRB_Boostrap.Services;
@@ -21,15 +22,37 @@ public sealed class FileStager : IFileStager
     {
         try
         {
-            Directory.CreateDirectory(stagingPath);
             int total = files.Count;
+
+            // Validate every destination before writing anything: archive entries are untrusted
+            string[] targets = new string[total];
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < total; i++)
+            {
+                FileEntry file = files[i];
+                if (!PathSafety.TryResolveEntry(stagingPath, file.Directory, file.FileName, out _, out string target))
+                {
+                    _logger.LogError("Rejected archive entry with unsafe path: Directory='{Dir}', FileName='{File}'", file.Directory, file.FileName);
+                    return false;
+                }
+
+                if (!seen.Add(target))
+                {
+                    _logger.LogError("Rejected archive with duplicate entry: {Path}", target);
+                    return false;
+                }
+
+                targets[i] = target;
+            }
+
+            Directory.CreateDirectory(stagingPath);
 
             for (int i = 0; i < total; i++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
                 FileEntry file = files[i];
-                string fullPath = Path.Combine(stagingPath, file.Directory, file.FileName);
+                string fullPath = targets[i];
                 string? dir = Path.GetDirectoryName(fullPath);
 
                 if (!string.IsNullOrEmpty(dir))
@@ -100,8 +123,13 @@ public sealed class FileStager : IFileStager
                         : "";
                 }
 
-                var stagedFile = Path.Combine(stagingPath, file.Directory, file.FileName);
-                var targetFile = Path.Combine(installPath, fDir, file.FileName);
+                if (!PathSafety.TryResolveEntry(stagingPath, file.Directory, file.FileName, out _, out var stagedFile) ||
+                    !PathSafety.TryResolveEntry(installPath, fDir, file.FileName, out _, out var targetFile))
+                {
+                    _logger.LogError("Refusing to install entry with unsafe path: Directory='{Dir}', FileName='{File}'", file.Directory, file.FileName);
+                    return false;
+                }
+
                 var targetDir = Path.GetDirectoryName(targetFile);
 
                 _logger.LogInformation("  Staged file: {StagedFile} -> {TargetFile} (with installPath={InstallPath}, fileDir={FileDirectory}, fileName={FileFileName}", stagedFile, targetFile, installPath, fDir, file.FileName);
