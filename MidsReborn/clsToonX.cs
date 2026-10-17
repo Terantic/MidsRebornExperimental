@@ -2327,8 +2327,11 @@ namespace Mids_Reborn
             return new KeyValuePair<List<IPower>, List<IPower>>(mathPowers, buffedPowers);
         }
 
-        private void GenerateModifyEffectsArray(bool ignoreExisting = true)
+        private void GenerateModifyEffectsArray()
         {
+            var modifyEffects = new Dictionary<string, float>();
+            // A power granted to several build powers (e.g. Assassin's Focus) is a single source
+            var sources = new HashSet<(int, string)>();
             for (var index = 0; index < CurrentBuild.Powers.Count; index++)
             {
                 if (CurrentBuild.Powers[index] == null)
@@ -2341,65 +2344,58 @@ namespace Mids_Reborn
                     continue;
                 }
 
-                foreach (var effect in _buffedPowers[index].Effects)
+                // _mathPowers keeps Absorbed_Power_nID, the Effect copy constructor behind _buffedPowers does not
+                var powerSources = new HashSet<(int, string)>();
+                foreach (var effect in _mathPowers[index].Effects)
                 {
-                    if (_buffedPowers[index] == null)
+                    if (!IsActiveGlobalChanceMod(effect))
                     {
                         continue;
                     }
 
-                    if (!((effect.EffectType == Enums.eEffectType.GlobalChanceMod) & !string.IsNullOrEmpty(effect.Reward)))
+                    var source = (effect.Absorbed_Power_nID > -1 ? effect.Absorbed_Power_nID : CurrentBuild.Powers[index].NIDPower, effect.Reward);
+                    if (sources.Contains(source))
                     {
                         continue;
                     }
 
-                    if (ignoreExisting)
-                    {
-                        if (ModifyEffects.ContainsKey(effect.Reward))
-                        {
-                            continue;
-                        }
-                    }
+                    powerSources.Add(source);
+                    AddModifyEffect(modifyEffects, effect);
+                }
 
-                    if (ModifyEffects.ContainsKey(effect.Reward))
-                    {
-                        ModifyEffects[effect.Reward] += effect.Scale;
-                    }
-                    else
-                    {
-                        ModifyEffects[effect.Reward] = effect.Scale;
-                    }
+                sources.UnionWith(powerSources);
+            }
+
+            if (CurrentBuild.SetBonusVirtualPower is not null)
+            {
+                foreach (var effect in CurrentBuild.SetBonusVirtualPower.Effects.Where(IsActiveGlobalChanceMod))
+                {
+                    AddModifyEffect(modifyEffects, effect);
                 }
             }
 
-            if (CurrentBuild.SetBonusVirtualPower is null)
+            // Replaces rewards seeded while absorbing incarnate powers in pass 0 instead of adding to them
+            foreach (var modifyEffect in modifyEffects)
             {
-                return;
+                ModifyEffects[modifyEffect.Key] = modifyEffect.Value;
             }
-            
-            foreach (var effect in CurrentBuild.SetBonusVirtualPower.Effects)
+        }
+
+        // Mutually exclusive variants (e.g. per team size) are told apart by their conditions, eligible ones add up
+        private static bool IsActiveGlobalChanceMod(IEffect effect)
+        {
+            return (effect.EffectType == Enums.eEffectType.GlobalChanceMod) & !string.IsNullOrEmpty(effect.Reward) && effect.CanInclude() && effect.PvXInclude();
+        }
+
+        private static void AddModifyEffect(Dictionary<string, float> modifyEffects, IEffect effect)
+        {
+            if (modifyEffects.ContainsKey(effect.Reward))
             {
-                if (!((effect.EffectType == Enums.eEffectType.GlobalChanceMod) & !string.IsNullOrEmpty(effect.Reward)))
-                {
-                    continue;
-                }
-
-                if (ignoreExisting)
-                {
-                    if (ModifyEffects.ContainsKey(effect.Reward))
-                    {
-                        continue;
-                    }
-                }
-
-                if (ModifyEffects.ContainsKey(effect.Reward))
-                {
-                    ModifyEffects[effect.Reward] += effect.Scale;
-                }
-                else
-                {
-                    ModifyEffects[effect.Reward] = effect.Scale;
-                }
+                modifyEffects[effect.Reward] += effect.Scale;
+            }
+            else
+            {
+                modifyEffects[effect.Reward] = effect.Scale;
             }
         }
 
