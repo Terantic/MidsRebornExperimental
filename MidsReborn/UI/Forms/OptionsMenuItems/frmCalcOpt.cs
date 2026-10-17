@@ -132,14 +132,14 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems
 
             var priorFull = NormalizeDirectory(priorPath);
             var currentFull = NormalizeDirectory(currentPath);
-            if (PathEquals(priorFull, currentFull))
+            if (priorFull != null && currentFull != null && PathEquals(priorFull, currentFull))
             {
                 return;
             }
 
             // Copying into a subfolder of the old location would leave the copies inside the
-            // directory we later offer to delete recursively.
-            if (currentFull.StartsWith(priorFull, PathComparison))
+            // directory we later offer to delete recursively. Paths whose links can't be resolved are treated the same.
+            if (priorFull == null || currentFull == null || currentFull.StartsWith(priorFull, PathComparison))
             {
                 MessageBox.Show(@"The new builds folder is inside the current builds folder, so your builds cannot be copied there automatically.
 Please move these items manually.", @"Builds Path Change Detected!", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
@@ -179,16 +179,46 @@ Please move these items manually.", @"Move Completed With Exceptions", MessageBo
 
         private static bool PathEquals(string a, string b) => string.Equals(a, b, PathComparison);
 
-        private static string NormalizeDirectory(string path)
+        // Follows links (junctions, symlinks) on every part of the path, not only the last one, so a folder
+        // reached through a linked ancestor compares by where it physically is. Null when it can't be resolved.
+        private static string? NormalizeDirectory(string path)
         {
-            var full = Path.GetFullPath(path);
-            var info = new DirectoryInfo(full);
-            if (info.Exists && info.LinkTarget != null)
+            const int maxLinks = 64;
+            try
             {
-                full = info.ResolveLinkTarget(true)?.FullName ?? full;
+                var full = Path.GetFullPath(path);
+                for (var links = 0; links < maxLinks; links++)
+                {
+                    var resolved = Path.GetPathRoot(full) ?? string.Empty;
+                    var parts = full[resolved.Length..].Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+                    var linkFound = false;
+                    for (var i = 0; i < parts.Length; i++)
+                    {
+                        var next = Path.Combine(resolved, parts[i]);
+                        var target = new DirectoryInfo(next).LinkTarget;
+                        if (target == null)
+                        {
+                            resolved = next;
+                            continue;
+                        }
+
+                        // Start over from the link's target with the rest of the path appended, its own ancestors may be links too
+                        full = Path.GetFullPath(Path.Combine(Path.GetFullPath(target, resolved), Path.Combine(parts[(i + 1)..])));
+                        linkFound = true;
+                        break;
+                    }
+
+                    if (!linkFound)
+                    {
+                        return Path.EndsInDirectorySeparator(resolved) ? resolved : resolved + Path.DirectorySeparatorChar;
+                    }
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
             }
 
-            return Path.TrimEndingDirectorySeparator(full) + Path.DirectorySeparatorChar;
+            return null;
         }
 
         private void btnSaveFolderReset_Click(object sender, EventArgs e)

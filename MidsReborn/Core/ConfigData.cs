@@ -68,6 +68,9 @@ namespace Mids_Reborn.Core
 
         private const string OverrideNames = "Mids Reborn Comparison Overrides";
 
+        // Database folder the loaded CompOverride belongs to; DataPath already names the next database after a switch
+        private string? _overridesDataPath;
+
         public bool FirstRun { get; set; }
         public AutoUpdate AutomaticUpdates { get; set; }
 
@@ -418,11 +421,16 @@ namespace Mids_Reborn.Core
             
             var serializer = Serializer.GetSerializer();
             Save(serializer, AppDataPaths.FNameJsonConfig);
-            SaveOverrides(serializer);
+            // Nothing to write until a database's overrides have been loaded
+            if (!string.IsNullOrWhiteSpace(_overridesDataPath))
+            {
+                SaveOverrides(serializer, _overridesDataPath);
+            }
         }
 
         public void LoadOverrides(string dataPath = "")
         {
+            _overridesDataPath = dataPath;
             if (string.IsNullOrWhiteSpace(dataPath))
             {
                 CompOverride = [];
