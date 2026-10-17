@@ -474,6 +474,53 @@ namespace Mids_Reborn
                 "tanker_defense.psionic_armor.fortify_mind" => "Tanker_Defense.Psionic_Armor.Psychokinetic_Barrier",
                 "stalker_melee.sonic_melee.assassins_resonance" => "Stalker_Melee.Sonic_Melee.Assassins_Whisper",
 
+                // Live (I28P4) internal names that differ from this database's names
+                "blaster_ranged.seismic_blast.shockwaves" => "Blaster_Ranged.Seismic_Blast.Seismic_Shockwaves",
+                "blaster_support.sonic_manipulation.build_up" => "Blaster_Support.Sonic_Manipulation.Sound_Booster",
+                "brute_defense.ice_armor.rime_ice" => "Brute_Defense.Ice_Armor.Rime",
+                "brute_defense.regeneration.instant_regeneration" => "Brute_Defense.Regeneration.Reactive_Regeneration",
+                "brute_melee.sonic_melee.build_up" => "Brute_Melee.Sonic_Melee.Sound_Booster",
+                "corruptor_ranged.seismic_blast.shockwaves" => "Corruptor_Ranged.Seismic_Blast.Seismic_Shockwaves",
+                "defender_ranged.seismic_blast.shockwaves" => "Defender_Ranged.Seismic_Blast.Seismic_Shockwaves",
+                "dominator_assault.savage_assault.call_ravens" => "Dominator_Assault.Savage_Assault.Unkindness",
+                "epic.dark_mastery_controller.gather_shadows" => "Epic.Dark_Mastery_Controller.Midnight_Grasp",
+                "epic.dark_mastery_controller.torrent" => "Epic.Dark_Mastery_Controller.Umbral_Torrent",
+                "epic.ice_mastery_defcorr.ice_slick" => "Epic.Ice_Mastery_DefCorr.Build_Up",
+                "epic.dark_mastery_dominator.torrent" => "Epic.Dark_Mastery_Dominator.Umbral_Torrent",
+                "epic.sentinel_elec_mastery.havok_punch" => "Epic.Sentinel_Elec_Mastery.Havoc_Punch",
+                "epic.sentinel_lev_mastery.arctic_breath" => "Epic.Sentinel_Lev_Mastery.Chum_Spray",
+                "mastermind_buff.kinetics.fulcrum_shift" => "Mastermind_Buff.Kinetics.Kinetic_Transfer",
+                "mastermind_buff.radiation_emission.em_pulse" => "Mastermind_Buff.Radiation_Emission.EMP_Pulse",
+                "mastermind_buff.radiation_emission.enervating_field" => "Mastermind_Buff.Radiation_Emission.Enervating__Field",
+                "mastermind_buff.radiation_emission.radiant_aura" => "Mastermind_Buff.Radiation_Emission.Radiation_Emission",
+                "scrapper_defense.ice_armor.rime_ice" => "Scrapper_Defense.Ice_Armor.Rime",
+                "scrapper_defense.regeneration.instant_regeneration" => "Scrapper_Defense.Regeneration.Reactive_Regeneration",
+                "scrapper_defense.stone_armor.mineral_armor" => "Scrapper_Defense.Stone_Armor.Minerals",
+                "scrapper_defense.stone_armor.stone_armor" => "Scrapper_Defense.Stone_Armor.Rock_Armor",
+                "scrapper_melee.sonic_melee.build_up" => "Scrapper_Melee.Sonic_Melee.Sound_Booster",
+                "scrapper_melee.stone_melee.confront" => "Scrapper_Melee.Stone_Melee.Taunt",
+                "sentinel_defense.ice_armor.rime_ice" => "Sentinel_Defense.Ice_Armor.Rime",
+                "sentinel_defense.invulnerability.unyeilding" => "Sentinel_Defense.Invulnerability.Unyielding",
+                "sentinel_defense.stone_armor.mineral_armor" => "Sentinel_Defense.Stone_Armor.Minerals",
+                "sentinel_defense.stone_armor.stone_armor" => "Sentinel_Defense.Stone_Armor.Rock_Armor",
+                "sentinel_ranged.seismic_blast.shockwaves" => "Sentinel_Ranged.Seismic_Blast.Seismic_Shockwaves",
+                "stalker_defense.ice_armor.rime_ice" => "Stalker_Defense.Ice_Armor.Rime",
+                "stalker_defense.regeneration.instant_regeneration" => "Stalker_Defense.Regeneration.Reactive_Regeneration",
+                "stalker_defense.shield_defense.active_defense" => "Stalker_Defense.Shield_Defense.Deflection",
+                "stalker_defense.shield_defense.battle_agility" => "Stalker_Defense.Shield_Defense.Active_Defense",
+                "stalker_defense.shield_defense.deflection" => "Stalker_Defense.Shield_Defense.Battle_Agility",
+                "stalker_defense.stone_armor.mineral_armor" => "Stalker_Defense.Stone_Armor.Minerals",
+                "stalker_defense.stone_armor.stone_armor" => "Stalker_Defense.Stone_Armor.Rock_Armor",
+                "stalker_defense.willpower.reconstruction" => "Stalker_Defense.Willpower.Resurgence",
+                "stalker_defense.willpower.resurgence" => "Stalker_Defense.Willpower.Reconstruction",
+                "stalker_melee.stone_melee.assassins_rockslide" => "Stalker_Melee.Stone_Melee.Assassins_Smash",
+                "stalker_melee.stone_melee.heavy_mallet" => "Stalker_Melee.Stone_Melee.Seismic_Mallet",
+                "tanker_defense.energy_aura.energize" => "Tanker_Defense.Energy_Aura.Conserve_Power",
+                "tanker_defense.energy_aura.energy_reserve" => "Tanker_Defense.Energy_Aura.Power_Armor",
+                "tanker_defense.ice_armor.rime_ice" => "Tanker_Defense.Ice_Armor.Rime",
+                "tanker_defense.regeneration.instant_healing" => "Tanker_Defense.Regeneration.Reactive_Regeneration",
+                "tanker_melee.sonic_melee.build_up" => "Tanker_Melee.Sonic_Melee.Sound_Booster",
+
                 _ => fullName
             };
         }
@@ -518,7 +565,8 @@ namespace Mids_Reborn
             var r3 = new Regex(@"^[\t\s]*([0-9a-zA-Z\+\:\-_]+) \(([0-9]+)(\+([1-5]))?\)$");
 
             var line = -1;
-            using var streamReader = new StreamReader(BuildString);
+            // BuildString is a file path (File > Open) or the file's text (clipboard import)
+            using TextReader streamReader = File.Exists(BuildString) ? new StreamReader(BuildString) : new StringReader(BuildString);
             while (streamReader.ReadLine() is { } lineText)
             {
                 line++;
