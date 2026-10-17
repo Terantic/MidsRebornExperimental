@@ -46,6 +46,7 @@ namespace Mids_Reborn.UI.Forms
                 {
                     var configCompOverride = MidsContext.Config.CompOverride;
                     Array.Resize(ref configCompOverride, MidsContext.Config.CompOverride.Length + 1);
+                    MidsContext.Config.CompOverride = configCompOverride;
                     //MidsContext.Config.CompOverride = (Enums.CompOverride[]) Utils.CopyArray(MidsContext.Config.CompOverride, new Enums.CompOverride[MidsContext.Config.CompOverride.Length + 1]);
                     var compOverride = MidsContext.Config.CompOverride;
                     var index = MidsContext.Config.CompOverride.Length - 1;

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Windows.Forms;
 using Mids_Reborn.Core;
@@ -39,8 +40,8 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
         {
             var database = DatabaseAPI.Database;
             //var salvageArray = (Salvage[]) Utils.CopyArray(database.Salvage, new Salvage[DatabaseAPI.Database.Salvage.Length + 1]);
-            var salvageArray = Array.Empty<Salvage>();
-            Array.Copy(database.Salvage, salvageArray, database.Salvage.Length + 1);
+            var salvageArray = database.Salvage;
+            Array.Resize(ref salvageArray, salvageArray.Length + 1);
             database.Salvage = salvageArray;
             DatabaseAPI.Database.Salvage[^1] = new Salvage();
             AddListItem(DatabaseAPI.Database.Salvage.Length - 1);
@@ -86,21 +87,18 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
         private void btnImport_Click(object sender, EventArgs e)
         {
             char[] chArray = {'\r'};
-            var strArray1 = Clipboard.GetDataObject()?.GetData("System.String", true).ToString().Split(chArray);
+            var strArray1 = Clipboard.GetDataObject()?.GetData("System.String", true)?.ToString()?.Split(chArray);
+            if (strArray1 == null) return;
             chArray[0] = '\t';
-            DatabaseAPI.Database.Salvage = new Salvage[0];
+            // Parse every row before replacing the salvage list, so a bad import leaves the current one alone
+            var imported = new List<Salvage>();
             var num = strArray1.Length - 1;
             for (var index = 0; index <= num; ++index)
             {
                 var strArray2 = strArray1[index].Split(chArray);
-                if (strArray2.Length <= 7) continue;
-                var database = DatabaseAPI.Database;
-                //var salvageArray = (Salvage[]) Utils.CopyArray(database.Salvage, new Salvage[DatabaseAPI.Database.Salvage.Length + 1]);
-                var salvageArray = Array.Empty<Salvage>();
-                Array.Copy(database.Salvage, salvageArray, database.Salvage.Length + 1);
-                database.Salvage = salvageArray;
-                DatabaseAPI.Database.Salvage[^1] = new Salvage();
-                var salvage = DatabaseAPI.Database.Salvage[^1];
+                if (strArray2.Length <= 10) continue;
+                var salvage = new Salvage();
+                imported.Add(salvage);
                 if (!strArray2[0].StartsWith("S") & (strArray2[0].Length > 2))
                     strArray2[0] = strArray2[0].Substring(1);
                 salvage.InternalName = strArray2[0];
@@ -127,6 +125,8 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
                 salvage.Rarity = (Recipe.RecipeRarity) Math.Round(Convert.ToDouble(strArray2[6]) - 1.0);
             }
 
+            if (imported.Count == 0) return;
+            DatabaseAPI.Database.Salvage = imported.ToArray();
             FillList();
         }
 
