@@ -119,7 +119,7 @@ public sealed class PatchFlowManager : IPatchFlowManager
                     await _ui.ShowStatusAsync("Downloading hashes...", 500, true, cancellationToken);
 
                     bool ok = await _downloader.DownloadFileAsync(
-                        $"{entry.SourceUri}{Path.GetFileName(hashPath)}",
+                        $"{baseUrl}{Path.GetFileName(hashPath)}",
                         hashPath,
                         "Downloading hashes...",
                         true,
