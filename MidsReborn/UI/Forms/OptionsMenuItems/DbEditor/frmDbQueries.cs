@@ -26,10 +26,9 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
                 Order = SortOrder.None;
             }
 
-            public int Compare(object x, object y)
+            public int Compare(object? x, object? y)
             {
-                var listViewX = (ListViewItem)x;
-                var listViewY = (ListViewItem)y;
+                if (x is not ListViewItem listViewX || y is not ListViewItem listViewY) return 0;
 
                 var compareResult = string.Compare(listViewX.SubItems[SortColumn].Text, listViewY.SubItems[SortColumn].Text, StringComparison.InvariantCultureIgnoreCase);
 

@@ -199,12 +199,12 @@ namespace Mids_Reborn.UI.Controls
             Redraw();
         }
 
-        private void ImageButton_BackColorChanged(object sender, EventArgs e)
+        private void ImageButton_BackColorChanged(object? sender, EventArgs e)
         {
             Redraw();
         }
 
-        private void ImageButton_FontChanged(object sender, EventArgs e)
+        private void ImageButton_FontChanged(object? sender, EventArgs e)
         {
             Redraw();
         }
@@ -339,7 +339,7 @@ namespace Mids_Reborn.UI.Controls
             target.DrawString(iStr, bFont, brush, layoutRectangle, stringFormat);
         }
 
-        private void ImageButton_MouseDown(object sender, MouseEventArgs e)
+        private void ImageButton_MouseDown(object? sender, MouseEventArgs e)
         {
             if (!pToggle)
             {
@@ -353,7 +353,7 @@ namespace Mids_Reborn.UI.Controls
             }
         }
 
-        private void ImageButton_MouseLeave(object sender, EventArgs e)
+        private void ImageButton_MouseLeave(object? sender, EventArgs e)
         {
             if (!pToggle)
             {
@@ -367,7 +367,7 @@ namespace Mids_Reborn.UI.Controls
             }
         }
 
-        private void ImageButton_MouseUp(object sender, MouseEventArgs e)
+        private void ImageButton_MouseUp(object? sender, MouseEventArgs e)
         {
             if (!pToggle)
             {
@@ -384,13 +384,13 @@ namespace Mids_Reborn.UI.Controls
             }
         }
 
-        private void ImageButton_Paint(object sender, PaintEventArgs e)
+        private void ImageButton_Paint(object? sender, PaintEventArgs e)
         {
             if (bxOut == null) Draw();
             if (bxOut != null) e.Graphics.DrawImage(bxOut.Bitmap, 0, 0);
         }
 
-        private void ImageButton_SizeChanged(object sender, EventArgs e)
+        private void ImageButton_SizeChanged(object? sender, EventArgs e)
         {
             if (Size.Width != 105 | Size.Height != 22)
             {

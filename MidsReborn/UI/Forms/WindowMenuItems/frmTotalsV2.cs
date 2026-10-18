@@ -231,7 +231,7 @@ namespace Mids_Reborn.UI.Forms.WindowMenuItems
             }
         }
 
-        private void frmTotalsV2_Load(object sender, EventArgs e)
+        private void frmTotalsV2_Load(object? sender, EventArgs e)
         {
             MidsContext.Character.AlignmentChanged += CharacterOnAlignmentChanged;
             switch (MidsContext.Character.Alignment)
@@ -451,7 +451,7 @@ namespace Mids_Reborn.UI.Forms.WindowMenuItems
             ctlTotalsTabStrip1.Invalidate();
         }
 
-        private void frmTotalsV2_FormClosed(object sender, FormClosedEventArgs e)
+        private void frmTotalsV2_FormClosed(object? sender, FormClosedEventArgs e)
         {
             _myParent.FloatTotals(false, false);
         }

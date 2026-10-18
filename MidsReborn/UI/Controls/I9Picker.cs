@@ -211,7 +211,7 @@ namespace Mids_Reborn.UI.Controls
             Size = new Size(200, 300);
         }
 
-        private void I9PickerLoad(object sender, EventArgs e)
+        private void I9PickerLoad(object? sender, EventArgs e)
         {
             FullDraw();
         }
@@ -1002,7 +1002,7 @@ namespace Mids_Reborn.UI.Controls
             return GetRectBounds(iPoint.X, iPoint.Y);
         }
 
-        private void I9PickerPaint(object sender, PaintEventArgs e)
+        private void I9PickerPaint(object? sender, PaintEventArgs e)
         {
             if (_myBx.Bitmap != null)
             {
@@ -1041,7 +1041,7 @@ namespace Mids_Reborn.UI.Controls
             return checked((cell.Y - 1) * 4 + cell.X);
         }
 
-        private void I9PickerMouseDown(object sender, MouseEventArgs e)
+        private void I9PickerMouseDown(object? sender, MouseEventArgs e)
         {
             var iPt = new Point(e.X, e.Y);
             if (!MidsContext.Config.CloseEnhSelectPopupByMove && PointInRectangle(iPt, _buttonRectangle))
@@ -1398,7 +1398,7 @@ namespace Mids_Reborn.UI.Controls
             FullDraw();
         }
 
-        private void I9PickerMouseMove(object sender, MouseEventArgs e)
+        private void I9PickerMouseMove(object? sender, MouseEventArgs e)
         {
             var location = new Point(e.X, e.Y);
             var cellXy = GetCellXy(location);
@@ -2017,7 +2017,7 @@ namespace Mids_Reborn.UI.Controls
             }
         }
 
-        private void I9PickerKeyDown(object sender, KeyEventArgs e)
+        private void I9PickerKeyDown(object? sender, KeyEventArgs e)
         {
             var num = -1;
             var keyCode = e.KeyCode;

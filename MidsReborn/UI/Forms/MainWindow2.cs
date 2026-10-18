@@ -94,7 +94,6 @@ namespace Mids_Reborn.UI.Forms
             dvLastEnh = -1;
             dvLastNoLev = true;
             ActivePopupBounds = new Rectangle(0, 0, 1, 1);
-            LastState = FormWindowState.Normal;
             FlipSteps = 5;
             FlipInterval = 10;
             FlipStepDelay = 3;
@@ -8166,7 +8165,6 @@ The default position/state will be used upon next launch.", @"Window State Warni
         private I9Slot? LastEnhPlaced;
         private string? LastFileName;
         private int LastIndex;
-        private FormWindowState LastState;
         private DataView? myDataView;
         private bool NoResizeEvent;
         private bool NoUpdate;

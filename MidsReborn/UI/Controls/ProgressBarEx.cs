@@ -6,17 +6,12 @@ using System.Drawing.Text;
 using System.Windows.Forms;
 using Mids_Reborn.Core.Utils;
 using FontStyle = System.Drawing.FontStyle;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Mids_Reborn.UI.Controls
 {
-    public sealed partial class ProgressBarEx : ProgressBar, INotifyPropertyChanged
+    public sealed partial class ProgressBarEx : ProgressBar
     {
-        #region Events
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-
-        #endregion
-
         #region HiddenProps
 
         [Browsable(false)]
@@ -98,7 +93,7 @@ namespace Mids_Reborn.UI.Controls
         [EditorBrowsable(EditorBrowsableState.Always)]
         [Bindable(true)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-        public override Font Font { get; set; } = new(@"Microsoft Sans Serif", 9.75f, FontStyle.Bold);
+        [AllowNull] public override Font Font { get; set; } = new(@"Microsoft Sans Serif", 9.75f, FontStyle.Bold);
 
         // Behavior group
         [Description("Defines the position of the controls value text.")]
@@ -125,12 +120,6 @@ namespace Mids_Reborn.UI.Controls
         {
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.ResizeRedraw | ControlStyles.SupportsTransparentBackColor, true);
             InitializeComponent();
-            PropertyChanged += OnPropertyChanged;
-        }
-
-        private void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
-        {
-            Invalidate();
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -206,10 +195,8 @@ namespace Mids_Reborn.UI.Controls
         #region TypeClasses
 
         [TypeConverter(typeof(MrbTypeConverter<ProgressColors>))]
-        public sealed class ProgressColors : INotifyPropertyChanged
+        public sealed class ProgressColors
         {
-            public event PropertyChangedEventHandler? PropertyChanged;
-
             [Description("Sets the containers background color.")]
             [Browsable(true)]
             [EditorBrowsable(EditorBrowsableState.Always)]
@@ -252,7 +239,7 @@ namespace Mids_Reborn.UI.Controls
         }
 
         [TypeConverter(typeof(MrbTypeConverter<ProgressBorder>))]
-        public sealed class ProgressBorder : INotifyPropertyChanged
+        public sealed class ProgressBorder
         {
             public enum BorderToDraw
             {
@@ -288,8 +275,6 @@ namespace Mids_Reborn.UI.Controls
             {
                 return $"{Which}, {Thickness}, {Style}";
             }
-
-            public event PropertyChangedEventHandler? PropertyChanged;
         }
 
         #endregion

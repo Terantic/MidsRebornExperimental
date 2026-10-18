@@ -12,6 +12,7 @@ namespace Mids_Reborn.UI.Controls.Skia;
 
 [DesignerCategory("Code")]
 [ToolboxItem(true)]
+[CLSCompliant(false)]
 public class SkList : SKGLControl
 {
     public delegate void ItemClickEventHandler(SkListItem item, MouseButtons button);

@@ -57,7 +57,7 @@ namespace Mids_Reborn.Core
         /// <param name="prefix">Prefix string to look for</param>
         /// <param name="nameFound">Will put in nameFound the full matched key name, if any</param>
         /// <returns>True if a key name starts with prefix, false otherwise</returns>
-        public static bool ContainsKeyPrefix<T1, T2>(this Dictionary<T1, T2> dict, string prefix, ref string nameFound)
+        public static bool ContainsKeyPrefix<T1, T2>(this Dictionary<T1, T2> dict, string prefix, ref string nameFound) where T1 : notnull
         {
             foreach (var k in dict.Keys)
             {

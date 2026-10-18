@@ -28,7 +28,6 @@ namespace Mids_Reborn.UI.Forms
         private frmTimelineColorRefTable? fTimelineColorRefTable;
         private Stopwatch Stopwatch;
         private Size NormalGraphSize;
-        private float GraphZoom;
 
         private List<Enums.eEffectType> AllowedEffectsCursor = new()
         {
@@ -118,7 +117,6 @@ namespace Mids_Reborn.UI.Forms
             imageButtonEx2.ToggleState = TopMost ? ImageButtonEx.States.ToggledOn : ImageButtonEx.States.ToggledOff;
             chkCastTimeReal.Checked = ctlCombatTimeline1.UseArcanaTime;
 
-            GraphZoom = 100;
         }
 
         private void frmRotationHelper_Move(object sender, EventArgs e)

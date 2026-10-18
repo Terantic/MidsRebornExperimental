@@ -15,7 +15,7 @@ namespace Mids_Reborn.Core
 
         public IDictionary<string, IPowerset?> Powersets { get; }
 
-        public int CompareTo(object obj)
+        public int CompareTo(object? obj)
         {
             if (obj is PowersetGroup powersetGroup)
                 return string.Compare(Name, powersetGroup.Name, StringComparison.OrdinalIgnoreCase);

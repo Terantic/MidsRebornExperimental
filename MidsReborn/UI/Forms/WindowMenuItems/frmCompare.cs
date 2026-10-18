@@ -300,12 +300,12 @@ namespace Mids_Reborn.UI.Forms.WindowMenuItems
             lstDisplay.EndUpdate();
         }
 
-        private void frmCompare_FormClosed(object sender, FormClosedEventArgs e)
+        private void frmCompare_FormClosed(object? sender, FormClosedEventArgs e)
         {
             this.EventHandlerWithCatch(() => myParent.FloatCompareGraph(false));
         }
 
-        private void frmCompare_KeyDown(object sender, KeyEventArgs e)
+        private void frmCompare_KeyDown(object? sender, KeyEventArgs e)
         {
             this.EventHandlerWithCatch(() =>
             {
@@ -318,7 +318,7 @@ namespace Mids_Reborn.UI.Forms.WindowMenuItems
             });
         }
 
-        private void frmCompare_Load(object sender, EventArgs e)
+        private void frmCompare_Load(object? sender, EventArgs e)
         {
             FillDisplayList();
             UpdateData();
@@ -347,17 +347,17 @@ namespace Mids_Reborn.UI.Forms.WindowMenuItems
                 "Re-order powers so that similar powers are compared directly, regardless of their position in the set.\r\nFor example, moving snipe powers to directly compare.\r\n(This isn't known for its stunning accuracy, and gets confused by vastly different sets)");
         }
 
-        private void frmCompare_Move(object sender, EventArgs e)
+        private void frmCompare_Move(object? sender, EventArgs e)
         {
             this.EventHandlerWithCatch(StoreLocation);
         }
 
-        private void frmCompare_Resize(object sender, EventArgs e)
+        private void frmCompare_Resize(object? sender, EventArgs e)
         {
             this.EventHandlerWithCatch(StoreLocation);
         }
 
-        private void frmCompare_VisibleChanged(object sender, EventArgs e)
+        private void frmCompare_VisibleChanged(object? sender, EventArgs e)
         {
             this.EventHandlerWithCatch(() => Graph.BackColor = BackColor);
         }

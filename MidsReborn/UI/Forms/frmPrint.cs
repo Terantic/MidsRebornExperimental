@@ -69,7 +69,7 @@ namespace Mids_Reborn.UI.Forms
             chkPrintHistoryEnh.Enabled = chkPrintHistory.Checked;
         }
 
-        private void frmPrint_Load(object sender, EventArgs e)
+        private void frmPrint_Load(object? sender, EventArgs e)
         {
             if (PrinterSettings.InstalledPrinters.Count < 1)
             {

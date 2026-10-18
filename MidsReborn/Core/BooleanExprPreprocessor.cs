@@ -45,12 +45,14 @@ namespace Mids_Reborn.Core
                 true => condType switch
                 {
                     "bool" => v as bool? ?? true ? "1" : "0",
-                    "int" => $"{v as int? ?? 100}"
+                    "int" => $"{v as int? ?? 100}",
+                    _ => throw new ArgumentOutOfRangeException(nameof(condType))
                 },
                 _ => condType switch
                 {
                     "bool" => v as bool? ?? true ? 1 : 0,
-                    "int" => v as int? ?? 100
+                    "int" => v as int? ?? 100,
+                    _ => throw new ArgumentOutOfRangeException(nameof(condType))
                 }
             };
         }

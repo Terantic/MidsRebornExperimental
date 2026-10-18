@@ -945,7 +945,7 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
             cbFilter.SelectedIndex = cbFilter.Items.IndexOf("Groups");
         }
 
-        private void frmPowerBrowser_Load(object sender, EventArgs e)
+        private void frmPowerBrowser_Load(object? sender, EventArgs e)
         {
             lvGroup.EnableDoubleBuffer();
             lvSet.EnableDoubleBuffer();

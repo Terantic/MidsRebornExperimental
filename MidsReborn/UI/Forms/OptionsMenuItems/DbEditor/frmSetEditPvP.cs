@@ -729,7 +729,7 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
             }
         }
 
-        private void frmSetEdit_Load(object sender, EventArgs e)
+        private void frmSetEdit_Load(object? sender, EventArgs e)
         {
             _setBonusList = DatabaseAPI.NidPowers("set_bonus.set_bonus");
             _setBonusListPvp = DatabaseAPI.NidPowers("set_bonus.pvp_set_bonus");

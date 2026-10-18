@@ -43,7 +43,6 @@ namespace Mids_Reborn.UI.Controls
         private IContainer? Components;
         private bool _dualName;
         private List<GraphItem> _items;
-        private bool _loaded;
         private int _nameWidth;
         private bool _noDraw;
         private int _oldMouseX;
@@ -119,7 +118,6 @@ namespace Mids_Reborn.UI.Controls
             _oldMouseY = 0;
             _pItemHeight = 8;
             _nameWidth = 72;
-            _loaded = false;
             _pShowScale = false;
             _pScaleHeight = 32;
             _BarAlignment = BarAlignment.Left;
@@ -601,7 +599,6 @@ namespace Mids_Reborn.UI.Controls
                 Draw();
             }
 
-            _loaded = true;
         }   
 
         public void AddItem(string sName, float nBase, float nEnh, string iTip = "")

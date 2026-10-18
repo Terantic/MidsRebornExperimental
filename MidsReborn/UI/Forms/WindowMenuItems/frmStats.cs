@@ -786,12 +786,12 @@ namespace Mids_Reborn.UI.Forms.WindowMenuItems
             NoDraw = false;
         }
 
-        private void frmStats_FormClosed(object sender, FormClosedEventArgs e)
+        private void frmStats_FormClosed(object? sender, FormClosedEventArgs e)
         {
             myParent.FloatStatGraph(false);
         }
 
-        private void frmStats_Load(object sender, EventArgs e)
+        private void frmStats_Load(object? sender, EventArgs e)
         {
             SetUiForCompare(false);
             FillComboBoxes();
@@ -821,12 +821,12 @@ namespace Mids_Reborn.UI.Forms.WindowMenuItems
             btnClose.UseAlt = alignment is Enums.Alignment.Villain or Enums.Alignment.Rogue or Enums.Alignment.Loyalist;
         }
 
-        private void frmStats_Move(object sender, EventArgs e)
+        private void frmStats_Move(object? sender, EventArgs e)
         {
             StoreLocation();
         }
 
-        private void frmStats_Resize(object sender, EventArgs e)
+        private void frmStats_Resize(object? sender, EventArgs e)
         {
             SizeElements();
         }
@@ -898,6 +898,7 @@ namespace Mids_Reborn.UI.Forms.WindowMenuItems
                     DisplayMode.DebuffResistance => ["Defense", "Endurance", "Recovery", "PerceptionRadius", "ToHit", "RechargeTime", "SpeedRunning", "Regeneration"],
                     DisplayMode.Elusivity => ["Untyped", "Smashing", "Lethal", "Fire", "Cold", "Energy", "Negative", "Toxic", "Psionic", "Melee", "Ranged", "AoE"],
                     DisplayMode.Defense => ["Smashing", "Lethal", "Fire", "Cold", "Energy", "Negative", "Toxic", "Psionic", "Melee", "Ranged", "AoE"],
+                    _ => throw new ArgumentOutOfRangeException(nameof(statDisplayed))
                 };
 
                 for (var index = 0; index < statGroup.Length; index++)
@@ -2089,7 +2090,8 @@ namespace Mids_Reborn.UI.Forms.WindowMenuItems
                         DisplayMode.StatusProtection or DisplayMode.StatusResistance => ["Held", "Stunned", "Sleep", "Immobilized", "Knockback", "Repel", "Confused", "Terrorized", "Taunt", "Placate", "Teleport"],
                         DisplayMode.DebuffResistance => ["Defense", "Endurance", "Recovery", "PerceptionRadius", "ToHit", "RechargeTime", "SpeedRunning", "Regeneration"],
                         DisplayMode.Elusivity => ["Untyped", "Smashing", "Lethal", "Fire", "Cold", "Energy", "Negative", "Toxic", "Psionic", "Melee", "Ranged", "AoE"],
-                        DisplayMode.Defense => ["Smashing", "Lethal", "Fire", "Cold", "Energy", "Negative", "Toxic", "Psionic", "Melee", "Ranged", "AoE"]
+                        DisplayMode.Defense => ["Smashing", "Lethal", "Fire", "Cold", "Energy", "Negative", "Toxic", "Psionic", "Melee", "Ranged", "AoE"],
+                        _ => throw new ArgumentOutOfRangeException(nameof(s))
                     };
 
                     string statGroupLabel = s switch

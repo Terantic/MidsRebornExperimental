@@ -203,7 +203,7 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
             lvSalvage.EndUpdate();
         }
 
-        private void frmSalvageEdit_Load(object sender, EventArgs e)
+        private void frmSalvageEdit_Load(object? sender, EventArgs e)
         {
             lvSalvage.EnableDoubleBuffer();
 

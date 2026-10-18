@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Mids_Reborn.UI.Forms
 {
@@ -33,7 +34,7 @@ namespace Mids_Reborn.UI.Forms
         };
 
         private Font _font = new("Microsoft Sans Serif", 9.25f);
-        public override Font Font
+        [AllowNull] public override Font Font
         {
             get => _font;
             set

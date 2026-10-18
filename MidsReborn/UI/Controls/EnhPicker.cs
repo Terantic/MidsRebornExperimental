@@ -4,6 +4,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 using System.Windows.Forms;
 using Mids_Reborn.Core.Base.Master_Classes;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Mids_Reborn.UI.Controls
 {
@@ -35,7 +36,7 @@ namespace Mids_Reborn.UI.Controls
         #endregion
 
 
-        public override Font Font { get; set; } = new(@"Microsoft Sans Serif", 10.25f, FontStyle.Bold);
+        [AllowNull] public override Font Font { get; set; } = new(@"Microsoft Sans Serif", 10.25f, FontStyle.Bold);
 
         [Description("The border color of the component and it's cells.")]
         [Category("Appearance")]

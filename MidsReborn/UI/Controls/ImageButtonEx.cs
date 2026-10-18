@@ -7,6 +7,7 @@ using System.Drawing.Text;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows.Forms;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Mids_Reborn.UI.Controls
 {
@@ -121,7 +122,7 @@ namespace Mids_Reborn.UI.Controls
         [EditorBrowsable(EditorBrowsableState.Always)]
         [Bindable(true)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-        public override Font Font
+        [AllowNull] public override Font Font
         {
             get => _font;
             set
@@ -171,7 +172,7 @@ namespace Mids_Reborn.UI.Controls
         [EditorBrowsable(EditorBrowsableState.Always)]
         [Bindable(true)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-        public override string? Text
+        [AllowNull] public override string Text
         {
             get => _text ??= base.Text;
             set

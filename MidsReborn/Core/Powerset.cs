@@ -203,7 +203,7 @@ namespace Mids_Reborn.Core
             }
         }
 
-        public int CompareTo(object obj)
+        public int CompareTo(object? obj)
         {
             if (!(obj is IPowerset powerset))
                 throw new ArgumentException("Comparison failed - Passed object was not a Powerset Class!");

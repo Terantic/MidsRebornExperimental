@@ -829,8 +829,6 @@ namespace Mids_Reborn
             static bool IsSpeedScalar(Enums.eEffectType mod) => mod is Enums.eEffectType.SpeedRunning or Enums.eEffectType.SpeedFlying or Enums.eEffectType.SpeedJumping or Enums.eEffectType.JumpHeight;
             static bool IsDamageBuffOrEnhancement(IEffect fx) => fx.EffectType is Enums.eEffectType.DamageBuff or Enums.eEffectType.Enhancement;
             static bool IsGlobalAccuracySource(IPower src) => ReferenceEquals(src, MidsContext.Character.CurrentBuild.SetBonusVirtualPower) || src.PowerType == Enums.ePowerType.GlobalBoost;
-            static bool IsHealBuff(IEffect fx) => fx is { EffectType: Enums.eEffectType.Enhancement, ETModifies: Enums.eEffectType.Heal };
-            static bool IsHPBuff(IEffect fx) => fx is { EffectType: Enums.eEffectType.Enhancement, ETModifies: Enums.eEffectType.HitPoints };
         }
 
         private static bool IsClickPower(IPower power)
@@ -1831,7 +1829,8 @@ namespace Mids_Reborn
                                 ? powerMath.Effects[effIdx].ETModifies switch
                                 {
                                     Enums.eEffectType.Defense => enhancement.GetEnhancementEffect(Enums.eEnhance.Defense, -1, _buffedPowers[hIDX].Effects[effIdx].Math_Mag),
-                                    Enums.eEffectType.Regeneration => enhancement.GetEnhancementEffect(Enums.eEnhance.Heal, -1, _buffedPowers[hIDX].Effects[effIdx].Math_Mag)
+                                    Enums.eEffectType.Regeneration => enhancement.GetEnhancementEffect(Enums.eEnhance.Heal, -1, _buffedPowers[hIDX].Effects[effIdx].Math_Mag),
+                                    _ => throw new ArgumentOutOfRangeException("ETModifies")
                                 }
                                 : enhancement.GetEnhancementEffect(iEffect, -1, _buffedPowers[hIDX].Effects[effIdx].Math_Mag);
 

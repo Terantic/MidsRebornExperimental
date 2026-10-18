@@ -50,7 +50,7 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
             _effectIndex = fxIndex;
         }
 
-        private void frmPowerEffect_Load(object sender, EventArgs e)
+        private void frmPowerEffect_Load(object? sender, EventArgs e)
         {
             FillComboBoxes();
             DisplayEffectData();

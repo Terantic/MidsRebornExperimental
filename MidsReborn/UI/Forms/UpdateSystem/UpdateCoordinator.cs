@@ -16,6 +16,7 @@ namespace Mids_Reborn.UI.Forms.UpdateSystem
 {
     public static class UpdateCoordinator
     {
+        [System.CLSCompliant(false)]
         public static async Task<bool> CheckAndHandleUpdatesAsync(IWin32Window parent, bool startupCheck = false, bool honorDelay = false, ILogger? logger = null)
         {
             if (honorDelay && !IsUpdateCheckDue()) { return false; }

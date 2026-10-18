@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace Mids_Reborn.UI.Design.Designer
 {
+    [System.CLSCompliant(false)]
     public class ScrollPanelExDesigner : ParentControlDesigner
     {
         public override void Initialize(IComponent component)

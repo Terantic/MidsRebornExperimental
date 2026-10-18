@@ -15,7 +15,6 @@ namespace Mids_Reborn.UI.Forms
         private CustomGraphStat.eCustomGraphStat[]? SelectedStats = [];
         private ConfigData.CustomGraphSettings[]? SelectedSettings = [];
 
-        private int? AvailableStatSelectedItem = null;
         private int? SelectedStatSelectedItem = null;
 
         public frmCustomGraphsSelector()
@@ -432,6 +431,7 @@ namespace Mids_Reborn.UI.Forms
                     CustomGraphStat.eCustomGraphStat.StatusResistance => $"{(statOptions.MezMode == CustomGraphStat.eCustomGraphMode.Single ? $"Resistance to {statOptions.MezType}) only" : statOptions.MezMode)}",
                     CustomGraphStat.eCustomGraphStat.Elusivity => $"{(statOptions.DamageMode == CustomGraphStat.eCustomGraphMode.Single ? $"{statOptions.EffectType}({(statOptions.DamageType == Enums.eDamage.None ? "Untyped" : statOptions.DamageType)}) only" : statOptions.DamageMode)}",
                     CustomGraphStat.eCustomGraphStat.EnhMez => $"{(statOptions.MezMode == CustomGraphStat.eCustomGraphMode.Single ? $"{statOptions.EffectType}({statOptions.MezType}) only" : statOptions.MezMode)}",
+                    _ => throw new ArgumentOutOfRangeException(nameof(stat))
                 };
 
                 label = $"{statName} [{suffix}]";

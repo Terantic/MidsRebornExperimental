@@ -144,25 +144,25 @@ namespace Mids_Reborn.UI.Controls
             ResumeLayout(false);
         }
 
-        private void ctlPopUp_BackColorChanged(object sender, EventArgs e)
+        private void ctlPopUp_BackColorChanged(object? sender, EventArgs e)
         {
             NewBX();
             Draw();
         }
 
-        private void ctlPopUp_FontChanged(object sender, EventArgs e)
+        private void ctlPopUp_FontChanged(object? sender, EventArgs e)
         {
             NewBX();
             Draw();
         }
 
-        private void ctlPopUp_ForeColorChanged(object sender, EventArgs e)
+        private void ctlPopUp_ForeColorChanged(object? sender, EventArgs e)
         {
             NewBX();
             Draw();
         }
 
-        private void ctlPopUp_Load(object sender, EventArgs e)
+        private void ctlPopUp_Load(object? sender, EventArgs e)
         {
             NewBX();
             pData = default;
@@ -320,7 +320,7 @@ namespace Mids_Reborn.UI.Controls
             }
         }
 
-        private void ctlPopUp_Paint(object sender, PaintEventArgs e)
+        private void ctlPopUp_Paint(object? sender, PaintEventArgs e)
         {
             if (myBX != null)
             {
@@ -328,7 +328,7 @@ namespace Mids_Reborn.UI.Controls
             }
         }
 
-        private void ctlPopUp_SizeChanged(object sender, EventArgs e)
+        private void ctlPopUp_SizeChanged(object? sender, EventArgs e)
         {
             NewBX();
             Draw();

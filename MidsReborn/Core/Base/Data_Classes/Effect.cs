@@ -2139,7 +2139,7 @@ namespace Mids_Reborn.Core.Base.Data_Classes
                    (nIDClassName == -1 || nIDClassName == MidsContext.Archetype.Idx);
         }
 
-        public int CompareTo(object obj)
+        public int CompareTo(object? obj)
         {
             //Less than zero This instance is less than obj. 
             //Zero This instance is equal to obj. 

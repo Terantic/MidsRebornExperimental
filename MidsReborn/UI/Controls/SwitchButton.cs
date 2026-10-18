@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 using System.Windows.Forms;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Mids_Reborn.UI.Controls
 {
@@ -125,9 +126,9 @@ namespace Mids_Reborn.UI.Controls
         #region Designer Properties (HIDDEN)
 
         [Browsable(false)] public override Color BackColor { get; set; } = Color.Transparent;
-        [Browsable(false)] public override Image BackgroundImage { get; set; }
+        [Browsable(false)] public override Image? BackgroundImage { get; set; }
         [Browsable(false)] public override ImageLayout BackgroundImageLayout { get; set; } = ImageLayout.Stretch;
-        [Browsable(false)] public override string Text { get; set; }
+        [Browsable(false)] [AllowNull] public override string Text { get; set; }
 
         #endregion
 
@@ -226,12 +227,12 @@ namespace Mids_Reborn.UI.Controls
 
         internal class SwitchButtonOutlineTypeConverter : TypeConverter
         {
-            public override bool GetPropertiesSupported(ITypeDescriptorContext context)
+            public override bool GetPropertiesSupported(ITypeDescriptorContext? context)
             {
                 return true;
             }
 
-            public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
+            public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext? context, object value, Attribute[]? attributes)
             {
                 return TypeDescriptor.GetProperties(typeof(SwitchButtonOutline));
             }
@@ -298,12 +299,12 @@ namespace Mids_Reborn.UI.Controls
 
         public class SwitchButtonStateTextTypeConverter : TypeConverter
         {
-            public override bool GetPropertiesSupported(ITypeDescriptorContext context)
+            public override bool GetPropertiesSupported(ITypeDescriptorContext? context)
             {
                 return true;
             }
 
-            public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
+            public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext? context, object value, Attribute[]? attributes)
             {
                 return TypeDescriptor.GetProperties(typeof(SwitchButtonOutline));
             }
@@ -427,64 +428,64 @@ namespace Mids_Reborn.UI.Controls
 
         #region EventHandler Methods
 
-        private void OnDisplayTextChanged(object sender, string e)
+        private void OnDisplayTextChanged(object? sender, string e)
         {
             _outlinedLabel.Text = e;
             _outlinedLabel.Invalidate();
         }
 
-        private void OnMouseEnter(object sender, EventArgs e)
+        private void OnMouseEnter(object? sender, EventArgs e)
         {
             Cursor = Cursors.Hand;
             BackgroundImage = HoverImage;
             Invalidate();
         }
 
-        private void OnMouseLeave(object sender, EventArgs e)
+        private void OnMouseLeave(object? sender, EventArgs e)
         {
             Cursor = Cursors.Default;
             BackgroundImage = Image;
             Invalidate();
         }
 
-        private void OnForeColorChanged(object sender, Color e)
+        private void OnForeColorChanged(object? sender, Color e)
         {
             _outlinedLabel.ForeColor = e;
             _outlinedLabel.Invalidate();
         }
 
-        private void OnFontChanged(object sender, Font e)
+        private void OnFontChanged(object? sender, Font e)
         {
             _outlinedLabel.Font = e;
             _outlinedLabel.Invalidate();
         }
 
-        private void OnImageChanged(object sender, Image e)
+        private void OnImageChanged(object? sender, Image e)
         {
             BackgroundImage = e;
             Invalidate();
         }
 
-        private void OnOutlineEnablementChanged(object sender, bool e)
+        private void OnOutlineEnablementChanged(object? sender, bool e)
         {
             _outlinedLabel.OutlineEnabled = e;
             _outlinedLabel.Invalidate();
         }
 
-        private void OnOutlineColorChanged(object sender, Color e)
+        private void OnOutlineColorChanged(object? sender, Color e)
         {
             _outlinedLabel.OutlineColor = e;
             _outlinedLabel.Invalidate();
         }
 
-        private void OnOutlineWidthChanged(object sender, int e)
+        private void OnOutlineWidthChanged(object? sender, int e)
         {
             _outlinedLabel.OutlineWidth = e;
             _outlinedLabel.Invalidate();
         }
 
         
-        private void OnClicked(object sender, EventArgs e)
+        private void OnClicked(object? sender, EventArgs e)
         {
             switch (SwitchedState)
             {
@@ -503,7 +504,7 @@ namespace Mids_Reborn.UI.Controls
             }
         }
 
-        private void OnSwitchStateChanged(object sender, SwitchState e)
+        private void OnSwitchStateChanged(object? sender, SwitchState e)
         {
             switch (e)
             {
@@ -535,7 +536,7 @@ namespace Mids_Reborn.UI.Controls
             public Color OutlineColor { get; set; }
             public float OutlineWidth { get; set; }
             public bool OutlineEnabled { get; set; }
-            public override string Text { get; set; }
+            [AllowNull] public override string Text { get; set; }
 
             private PointF _point;
             private SizeF _drawSize;

@@ -33,7 +33,7 @@ namespace Mids_Reborn.UI.Forms
             Close();
         }
 
-        private void Busy_Closing(object sender, CancelEventArgs e)
+        private void Busy_Closing(object? sender, CancelEventArgs e)
         {
             e.Cancel = false;
             Dispose();

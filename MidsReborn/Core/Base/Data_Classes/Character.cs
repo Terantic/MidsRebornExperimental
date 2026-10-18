@@ -373,6 +373,7 @@ namespace Mids_Reborn.Core.Base.Data_Classes
             return Powersets.Select((ps, i) => new { I = i, Ps = ps?.FullName, N = names[i] }).Where(x => !string.IsNullOrWhiteSpace(x.N) && x.Ps == null).Select(x => (x.I, x.N));
         }
 
+        [CLSCompliant(false)]
         public void LoadPowerSetsByName(IEnumerable<string> sets)
         {
             Powersets = sets.Select(set => DatabaseAPI.Database.Powersets.FirstOrDefault(ps => ps?.FullName == set)).Select(powerSet => powerSet ?? new Powerset()).ToArray();

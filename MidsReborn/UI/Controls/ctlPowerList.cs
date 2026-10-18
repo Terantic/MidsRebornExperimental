@@ -9,9 +9,6 @@ namespace Mids_Reborn.UI.Controls
 {
     public sealed partial class ctlPowerList : ListBox
     {
-        public delegate void DrawPowerListItem(PowerListDrawItemEventArgs e);
-        public event DrawPowerListItem DrawListItem;
-
         public Color SelectionColor { get; set; }
         public Color SelectionBackColor { get; set; } = Color.DarkOrange;
         public override Color ForeColor { get; set; }
@@ -30,7 +27,6 @@ namespace Mids_Reborn.UI.Controls
         {
             SetStyle(ControlStyles.Opaque | ControlStyles.AllPaintingInWmPaint | ControlStyles.ResizeRedraw | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.SupportsTransparentBackColor, true);
             DrawMode = DrawMode.OwnerDrawFixed;
-            DrawListItem += OnDrawListItem;
             InitializeComponent();
         }
 

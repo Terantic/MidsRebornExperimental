@@ -324,7 +324,7 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
             txtDescLong.Text = MyAT.DescLong;
         }
 
-        private void frmEditArchetype_Load(object sender, EventArgs e)
+        private void frmEditArchetype_Load(object? sender, EventArgs e)
         {
             DisplayData();
             Loading = false;

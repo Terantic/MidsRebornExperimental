@@ -174,7 +174,7 @@ namespace Mids_Reborn.Core.Base.Data_Classes
 
         public bool Epic => ClassType == Enums.eClassType.HeroEpic || ClassType == Enums.eClassType.VillainEpic;
 
-        public int CompareTo(object obj)
+        public int CompareTo(object? obj)
         {
             if (obj == null)
                 throw new ArgumentNullException(nameof(obj));

@@ -323,7 +323,7 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
             }
         }
 
-        private void frmSetListing_Load(object sender, EventArgs e)
+        private void frmSetListing_Load(object? sender, EventArgs e)
         {
             lvSets.EnableDoubleBuffer();
             DisplayList();

@@ -75,7 +75,6 @@ namespace Mids_Reborn.Forms
 
             if (f.FileName.EndsWith(".mxd", StringComparison.InvariantCultureIgnoreCase))
             {
-                Stream? mStream = null;
                 var loadedPowers = MainModule.MidsController.Toon == null
                     ? []
                     : MainModule.MidsController.Toon.LoadFromFileLight(f.FileName);

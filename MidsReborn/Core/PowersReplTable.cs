@@ -21,7 +21,7 @@ namespace Mids_Reborn.Core
         private List<AlternateEntry> _table;
         public int Entries => _table.Count;
         private static PowersReplTable _current { get; set; }
-        private const bool EnableDebug = false;
+        private static readonly bool EnableDebug = false;
 
         internal static PowersReplTable Current
         {

@@ -1734,7 +1734,7 @@ namespace Mids_Reborn.Core
                 };
             }
 
-            public override bool Equals(object obj)
+            public override bool Equals(object? obj)
             {
                 if (obj is FXIdentifierKey o)
                 {

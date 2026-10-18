@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Mids_Reborn.UI.Controls
 {
@@ -14,7 +15,7 @@ namespace Mids_Reborn.UI.Controls
             //ctlOutlinedLabel1.Location = new Point(ctlOutlinedLabel1.Location.X + 10, ctlOutlinedLabel1.Location.Y + 4);
         }
 
-        private void OnTextChanged(object sender, EventArgs e)
+        private void OnTextChanged(object? sender, EventArgs e)
         {
             if (Image != null)
             {
@@ -29,7 +30,7 @@ namespace Mids_Reborn.UI.Controls
         public override Color BackColor { get; set; }
         public override Color ForeColor { get; set; }
 
-        public override string Text
+        [AllowNull] public override string Text
         {
             get => ctlOutlinedLabel1.Text;
             set => ctlOutlinedLabel1.Text = value;
