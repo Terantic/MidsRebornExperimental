@@ -28,6 +28,24 @@ public sealed class RestoreFlowManager : IRestoreFlowManager
         _pipeline = pipeline;
     }
 
+    /// <summary>
+    /// Older bootstrappers wrote database backups to Backup/&lt;name&gt;.mrbak, replacing anything after a dot in the name.
+    /// That file is only used when it can belong to this database alone: the name has no dot (Homecoming.1 and
+    /// Homecoming.2 both wrote Backup/Homecoming.mrbak) and isn't one the application backup was stored under.
+    /// </summary>
+    private static string? GetLegacyDatabaseBackupPath(string baseDir, string name)
+    {
+        if (name.Contains('.') ||
+            name.Equals(BackupManager.ApplicationBackupName, StringComparison.OrdinalIgnoreCase) ||
+            name.Equals(LegacyApplicationBackupName, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        string legacyPath = Path.Combine(baseDir, "Backup", name);
+        return File.Exists(BackupManager.GetArchivePath(legacyPath)) ? legacyPath : null;
+    }
+
     public async Task<int> ExecuteRestoreAsync(string name, string patchType, CancellationToken cancellationToken)
     {
         using (_logger.BeginScope("RestoreFlow {Name}", name))
@@ -54,6 +72,15 @@ public sealed class RestoreFlowManager : IRestoreFlowManager
                 if (File.Exists(BackupManager.GetArchivePath(legacyPath)))
                 {
                     _logger.LogInformation("Using legacy application backup: {Path}", legacyPath);
+                    backupPath = legacyPath;
+                }
+            }
+            else if (!isApplication && !File.Exists(BackupManager.GetArchivePath(backupPath)))
+            {
+                string? legacyPath = GetLegacyDatabaseBackupPath(baseDir, name);
+                if (legacyPath != null)
+                {
+                    _logger.LogInformation("Using legacy database backup: {Path}", legacyPath);
                     backupPath = legacyPath;
                 }
             }

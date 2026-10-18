@@ -321,7 +321,8 @@ public sealed class BackupManager : IBackupManager
     /// Resolves the backup path (without the .mrbak extension) for an update entry or rollback target.
     /// Application backups always use <see cref="ApplicationBackupName"/>, whatever display name the entry carries.
     /// Database backups live in Backup/Databases, so no database name can share the application backup.
-    /// Backups an older bootstrapper wrote for a database (Backup/&lt;name&gt;.mrbak) are no longer read.
+    /// Backups an older bootstrapper wrote for a database (Backup/&lt;name&gt;.mrbak) are only read by a manual rollback
+    /// (<see cref="RestoreFlowManager"/>), when the name makes them unambiguous.
     /// </summary>
     public static string GetBackupPath(string baseDir, string patchType, string name) =>
         patchType.Equals("Application", StringComparison.OrdinalIgnoreCase)
