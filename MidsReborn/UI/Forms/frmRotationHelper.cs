@@ -206,14 +206,14 @@ namespace Mids_Reborn.UI.Forms
                 return;
             }
 
-            var item = (KeyValuePair<string, ctlCombatTimeline.BuildPowerSlot>)listBox1.SelectedValue;
+            if (listBox1.SelectedValue is not KeyValuePair<string, ctlCombatTimeline.BuildPowerSlot> item) return;
             ctlCombatTimeline1.Powers.Add(item.Value);
             UpdatePowersText();
         }
 
         private void btnAddBoost_Click(object sender, EventArgs e)
         {
-            var item = (KeyValuePair<string, ctlCombatTimeline.BuildPowerSlot>)listBox2.SelectedValue;
+            if (listBox2.SelectedValue is not KeyValuePair<string, ctlCombatTimeline.BuildPowerSlot> item) return;
             if (ctlCombatTimeline1.UserBoosts.Contains(item.Value.BasePower))
             {
                 ctlCombatTimeline1.UserBoosts = ctlCombatTimeline1.UserBoosts.Where(e => !e.Equals(item.Value.BasePower)).ToList();
@@ -228,7 +228,7 @@ namespace Mids_Reborn.UI.Forms
 
         private void listBox1_DoubleClick(object sender, EventArgs e)
         {
-            var item = (KeyValuePair<string, ctlCombatTimeline.BuildPowerSlot>)listBox1.SelectedValue;
+            if (listBox1.SelectedValue is not KeyValuePair<string, ctlCombatTimeline.BuildPowerSlot> item) return;
             ctlCombatTimeline1.Powers.Add(item.Value);
 
             UpdatePowersText();
@@ -236,7 +236,7 @@ namespace Mids_Reborn.UI.Forms
 
         private void listBox2_DoubleClick(object sender, EventArgs e)
         {
-            var item = (KeyValuePair<string, ctlCombatTimeline.BuildPowerSlot>)listBox2.SelectedValue;
+            if (listBox2.SelectedValue is not KeyValuePair<string, ctlCombatTimeline.BuildPowerSlot> item) return;
             if (ctlCombatTimeline1.UserBoosts.Contains(item.Value.BasePower))
             {
                 ctlCombatTimeline1.UserBoosts = ctlCombatTimeline1.UserBoosts.Where(e => !e.Equals(item.Value.BasePower)).ToList();

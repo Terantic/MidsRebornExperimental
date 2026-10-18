@@ -889,8 +889,8 @@ namespace Mids_Reborn.UI.Forms.ImportExportItems
 
         private void lbColorTheme_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (_isLoading) return;
-            _share.ForumFormat.SelectedTheme = (ColorTheme)lbColorTheme.SelectedItem;
+            if (_isLoading || lbColorTheme.SelectedItem is not ColorTheme theme) return;
+            _share.ForumFormat.SelectedTheme = theme;
             panelColorHeadings.BackColor = _share.ForumFormat.SelectedTheme.Headings;
             panelColorLevels.BackColor = _share.ForumFormat.SelectedTheme.Levels;
             panelColorSlots.BackColor = _share.ForumFormat.SelectedTheme.Slots;
@@ -1010,7 +1010,9 @@ namespace Mids_Reborn.UI.Forms.ImportExportItems
 
         private void remThemBtn_Click(object sender, EventArgs e)
         {
-            _share.ForumFormat.RemoveTheme(lbColorTheme.SelectedIndex);
+            // Remove by item: while a filter is on, the list index doesn't match ColorThemes
+            if (lbColorTheme.SelectedItem is not ColorTheme theme) return;
+            _share.ForumFormat.RemoveTheme(theme);
         }
 
         private void resetThemeBtn_Click(object sender, EventArgs e)
