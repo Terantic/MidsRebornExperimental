@@ -343,6 +343,31 @@ namespace Mids_Reborn.Core.BuildFile
                    (string.IsNullOrWhiteSpace(enhData.RelativeLevel) || Enum.TryParse<Enums.eEnhRelative>(enhData.RelativeLevel, out var relativeLevel) && Enum.IsDefined(relativeLevel));
         }
 
+        // The game grants one level 1 primary and one level 1 secondary power in either order, but the build layout
+        // keeps the primary pick in slot 0 and the secondary pick in slot 1, so a file that lists them the other way
+        // round is read in layout order rather than flagged as impossible
+        private static List<PowerData?> OrderLevelOnePicks(List<PowerData?> entries)
+        {
+            if (entries.Count < 2) return entries;
+
+            var first = SetTypeOf(entries[0]);
+            var second = SetTypeOf(entries[1]);
+            if (first != Enums.ePowerSetType.Secondary || second is not (Enums.ePowerSetType.Primary or null)) return entries;
+
+            var ordered = new List<PowerData?>(entries);
+            (ordered[0], ordered[1]) = (ordered[1], ordered[0]);
+
+            return ordered;
+        }
+
+        private static Enums.ePowerSetType? SetTypeOf(PowerData? entry)
+        {
+            if (string.IsNullOrWhiteSpace(entry?.PowerName)) return null;
+            var powerId = DatabaseAPI.PiDFromUidPower(entry.PowerName);
+
+            return powerId < 0 ? null : DatabaseAPI.Database.Power[powerId]?.GetPowerSet()?.SetType;
+        }
+
         internal bool LoadBuild()
         {
             InherentPowers = new List<PowerEntry>();
@@ -363,9 +388,10 @@ namespace Mids_Reborn.Core.BuildFile
                     MidsContext.Character.CurrentBuild.LastPower = lastPower;
                 }
 
-                for (var powerIndex = 0; powerIndex < PowerEntries.Count; powerIndex++)
+                var powerEntries = OrderLevelOnePicks(PowerEntries);
+                for (var powerIndex = 0; powerIndex < powerEntries.Count; powerIndex++)
                 {
-                    var powerEntryData = PowerEntries[powerIndex];
+                    var powerEntryData = powerEntries[powerIndex];
 
                     var powerId = -1;
 
