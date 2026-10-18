@@ -516,13 +516,13 @@ namespace Mids_Reborn.UI.Forms
             return popupData;
         }
 
-        private void chkRecipe_CheckedChanged(object sender, EventArgs e)
+        private void chkRecipe_CheckedChanged(object? sender, EventArgs e)
         {
             lvDPA_SelectedIndexChanged(this, new EventArgs());
             MidsContext.Config.ShoppingListIncludesRecipes = chkRecipe.Checked;
         }
 
-        private void chkSortByLevel_CheckedChanged(object sender, EventArgs e)
+        private void chkSortByLevel_CheckedChanged(object? sender, EventArgs e)
         {
             UpdatePowerList();
         }
@@ -770,7 +770,7 @@ namespace Mids_Reborn.UI.Forms
             return num1 >= 0 ? num1 : -1;
         }
 
-        private void frmRecipeViewer_FormClosed(object sender, FormClosedEventArgs e)
+        private void frmRecipeViewer_FormClosed(object? sender, FormClosedEventArgs e)
         {
             if (SalvageHudVisible)
             {
@@ -789,7 +789,7 @@ namespace Mids_Reborn.UI.Forms
             myParent.FloatRecipe(false);
         }
 
-        private void frmRecipeViewer_Load(object sender, EventArgs e)
+        private void frmRecipeViewer_Load(object? sender, EventArgs e)
         {
             // Bug: open dps calc form then the recipe viewer, form size differs
             Size = new Size(738, 543);
@@ -944,7 +944,7 @@ namespace Mids_Reborn.UI.Forms
         }
 
         [DebuggerStepThrough]
-        private void lvPower_ItemChecked(object sender, ItemCheckedEventArgs e)
+        private void lvPower_ItemChecked(object? sender, ItemCheckedEventArgs e)
         {
             if (e.Item == null) return;
             if (e.Item.Index == 0)
@@ -970,17 +970,17 @@ namespace Mids_Reborn.UI.Forms
             FillEnhList();
         }
 
-        private void lvPower_MouseEnter(object sender, EventArgs e)
+        private void lvPower_MouseEnter(object? sender, EventArgs e)
         {
             lvPower.Focus();
         }
 
-        private void lvDPA_MouseEnter(object sender, EventArgs e)
+        private void lvDPA_MouseEnter(object? sender, EventArgs e)
         {
             lvDPA.Focus();
         }
 
-        private void lvDPA_SelectedIndexChanged(object sender, EventArgs e)
+        private void lvDPA_SelectedIndexChanged(object? sender, EventArgs e)
         {
             RecipeInfo.SetPopup(BuildList(false));
         }

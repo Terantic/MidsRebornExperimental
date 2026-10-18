@@ -25,7 +25,7 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
             Load += OnLoad;
         }
 
-        private void OnLoad(object sender, EventArgs e)
+        private void OnLoad(object? sender, EventArgs e)
         {
             lbCommandVars.BeginUpdate();
             lbCommandVars.Items.Clear();

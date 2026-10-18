@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using Mids_Reborn.Core.Base.Data_Classes;
 
@@ -167,7 +168,8 @@ namespace Mids_Reborn.Core
         float AtrModRechargeTime { get; set; }
         float AtrModSecondaryRange { get; set; }
 
-        List<KeyValue<string, string>>? ActiveConditionals { get; set; }
+        [AllowNull]
+        List<KeyValue<string, string>> ActiveConditionals { get; set; }
         bool Validated { get; set; }
         IPower? GetPower();
         void SetPower(IPower? power);

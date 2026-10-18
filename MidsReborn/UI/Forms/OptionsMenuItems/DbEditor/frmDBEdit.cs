@@ -193,25 +193,25 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
             DisplayInfo();
         }
 
-        private void udIssue_KeyPress(object sender, KeyPressEventArgs e)
+        private void udIssue_KeyPress(object? sender, KeyPressEventArgs e)
         {
             if (!MainModule.MidsController.IsAppInitialized) return;
             DatabaseAPI.Database.Issue = Convert.ToInt32(UdIssue.Value);
         }
 
-        private void udIssue_ValueChanged(object sender, EventArgs e)
+        private void udIssue_ValueChanged(object? sender, EventArgs e)
         {
             if (!MainModule.MidsController.IsAppInitialized || !Initialized) return;
             DatabaseAPI.Database.Issue = Convert.ToInt32(UdIssue.Value);
         }
 
-        private void udPageVol_KeyPress(object sender, KeyPressEventArgs e)
+        private void udPageVol_KeyPress(object? sender, KeyPressEventArgs e)
         {
             if (!MainModule.MidsController.IsAppInitialized) return;
             DatabaseAPI.Database.PageVol = Convert.ToInt32(UdPageVol.Value);
         }
 
-        private void udPageVol_ValueChanged(object sender, EventArgs e)
+        private void udPageVol_ValueChanged(object? sender, EventArgs e)
         {
             if (!MainModule.MidsController.IsAppInitialized || !Initialized) return;
             DatabaseAPI.Database.PageVol = Convert.ToInt32(UdPageVol.Value);
@@ -241,12 +241,9 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
 
         private void btnGCMIO_Click(object sender, EventArgs e)
         {
-            var iParent = _frmMain;
-            FrmGCMEditor gcmEditor = new FrmGCMEditor(ref iParent);
+            FrmGCMEditor gcmEditor = new FrmGCMEditor();
             gcmEditor.ShowDialog();
         }
-
-        private readonly MainWindow2 _frmMain;
 
         private void txtPageVol_MouseHover(object sender, EventArgs e)
         {

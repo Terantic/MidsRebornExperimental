@@ -5,6 +5,7 @@ using static Mids_Reborn.Core.Enums;
 
 namespace Mids_Reborn.UI.Design.Extensions
 {
+    [System.CLSCompliant(false)]
     public static class SKCanvasExt
     {
         /// <summary>

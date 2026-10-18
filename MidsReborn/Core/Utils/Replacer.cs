@@ -11,7 +11,7 @@ namespace Mids_Reborn.Core.Utils
     {
         private static Replacer? _replacerInstance;
         private static List<Item>? Items { get; set; } = new();
-        private readonly string _replacerFile = Path.Combine(MidsContext.Config.DataPath, "RepData.json");
+        private readonly string _replacerFile = Path.Combine(MidsContext.Config?.DataPath ?? AppDataPaths.FDefaultPath, "RepData.json");
 
         private Replacer()
         {

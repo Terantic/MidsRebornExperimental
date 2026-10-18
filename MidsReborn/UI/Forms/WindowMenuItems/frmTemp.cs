@@ -128,7 +128,7 @@ namespace Mids_Reborn.UI.Forms.WindowMenuItems
             llRight.Refresh();
         }
 
-        private void frmTemp_Load(object sender, EventArgs e)
+        private void frmTemp_Load(object? sender, EventArgs e)
         {
             BackColor = _myParent.BackColor;
             PopInfo.ForeColor = BackColor;

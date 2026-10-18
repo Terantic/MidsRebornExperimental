@@ -20,7 +20,7 @@ namespace Mids_Reborn.Core.Base.Document_Classes
         private Dictionary<PageType, bool> _completedPrintTasks;
 
         private PrintWhat _sectionCompleted;
-        public PrintDocument Document;
+        public PrintDocument? Document;
 
         private enum PageType
         {

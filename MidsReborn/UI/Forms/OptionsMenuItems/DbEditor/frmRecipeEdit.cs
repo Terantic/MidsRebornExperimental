@@ -41,7 +41,7 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
                 _recipeRaritiesWithBlank = raritiesList.ToArray();
             }
 
-            public int Compare(object a, object b)
+            public int Compare(object? a, object? b)
             {
                 if (a == null) return -1;
                 if (b == null) return 1;
@@ -87,7 +87,7 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
             FillList();
         }
 
-        private void frmRecipeEdit_Load(object sender, EventArgs e)
+        private void frmRecipeEdit_Load(object? sender, EventArgs e)
         {
             lvDPA.EnableDoubleBuffer();
             const Recipe.RecipeRarity recipeRarity = Recipe.RecipeRarity.Common;

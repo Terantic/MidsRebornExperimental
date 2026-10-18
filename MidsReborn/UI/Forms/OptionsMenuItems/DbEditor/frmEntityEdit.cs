@@ -192,7 +192,7 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
             cbClass.SelectedIndex = myEntity.GetNClassId();
         }
 
-        private void frmEntityEdit_Load(object sender, EventArgs e)
+        private void frmEntityEdit_Load(object? sender, EventArgs e)
         {
             Text = "Editing Entity: " + myEntity.UID;
             cbEntType.BeginUpdate();

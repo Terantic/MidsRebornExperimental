@@ -45,12 +45,14 @@ namespace Mids_Reborn.Core
                 true => condType switch
                 {
                     "bool" => v as bool? ?? true ? "1" : "0",
-                    "int" => $"{v as int? ?? 100}"
+                    "int" => $"{v as int? ?? 100}",
+                    _ => throw new ArgumentOutOfRangeException(nameof(condType))
                 },
                 _ => condType switch
                 {
                     "bool" => v as bool? ?? true ? 1 : 0,
-                    "int" => v as int? ?? 100
+                    "int" => v as int? ?? 100,
+                    _ => throw new ArgumentOutOfRangeException(nameof(condType))
                 }
             };
         }
@@ -61,8 +63,13 @@ namespace Mids_Reborn.Core
         /// </summary>
         /// <param name="conditionPower">Power named by the conditional</param>
         /// <returns>Stack count</returns>
-        public static int GetConditionStacks(IPower conditionPower)
+        public static int GetConditionStacks(IPower? conditionPower)
         {
+            if (conditionPower == null)
+            {
+                return 0;
+            }
+
             var pe = MidsContext.Character?.CurrentBuild?.Powers
                 .FirstOrDefault(e => e?.Power != null && e.Power.StaticIndex == conditionPower.StaticIndex);
 

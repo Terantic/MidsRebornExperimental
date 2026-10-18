@@ -321,9 +321,12 @@ namespace Mids_Reborn
                 }
                 else
                 {
-                    var iLevel = SlotCheck(CurrentBuild.Powers[powerIDX]);
-                    if (iLevel > -1)
-                        num2 = CurrentBuild.Powers[powerIDX].AddSlot(iLevel);
+                    if (CurrentBuild.Powers[powerIDX] is { } powerEntry)
+                    {
+                        var iLevel = SlotCheck(powerEntry);
+                        if (iLevel > -1)
+                            num2 = powerEntry.AddSlot(iLevel);
+                    }
                 }
 
                 ResetLevel();
@@ -341,9 +344,7 @@ namespace Mids_Reborn
 
         public static string FixSpelling(string iString)
         {
-            iString = iString?.Replace("Armour", "Armor");
-            iString = iString?.Replace("Electric Mastery", "Electrical Mastery");
-            return iString;
+            return iString.Replace("Armour", "Armor").Replace("Electric Mastery", "Electrical Mastery");
         }
 
         public void FlipAllSlots()
@@ -829,11 +830,9 @@ namespace Mids_Reborn
             static bool IsSpeedScalar(Enums.eEffectType mod) => mod is Enums.eEffectType.SpeedRunning or Enums.eEffectType.SpeedFlying or Enums.eEffectType.SpeedJumping or Enums.eEffectType.JumpHeight;
             static bool IsDamageBuffOrEnhancement(IEffect fx) => fx.EffectType is Enums.eEffectType.DamageBuff or Enums.eEffectType.Enhancement;
             static bool IsGlobalAccuracySource(IPower src) => ReferenceEquals(src, MidsContext.Character.CurrentBuild.SetBonusVirtualPower) || src.PowerType == Enums.ePowerType.GlobalBoost;
-            static bool IsHealBuff(IEffect fx) => fx is { EffectType: Enums.eEffectType.Enhancement, ETModifies: Enums.eEffectType.Heal };
-            static bool IsHPBuff(IEffect fx) => fx is { EffectType: Enums.eEffectType.Enhancement, ETModifies: Enums.eEffectType.HitPoints };
         }
 
-        private static bool IsClickPower(IPower power)
+        private static bool IsClickPower(IPower? power)
         {
             return power is {PowerType: Enums.ePowerType.Click, ClickBuff: false};
         }
@@ -1026,7 +1025,12 @@ namespace Mids_Reborn
                     CurrentBuild.Powers[hIDX].Power.Stacks = CurrentBuild.Powers[hIDX].VariableValue;
                 }
 
-                _mathPowers[hIDX] = GBPA_SubPass0_AssemblePowerEntry(CurrentBuild.Powers[hIDX].NIDPower, hIDX, 1);
+                if (GBPA_SubPass0_AssemblePowerEntry(CurrentBuild.Powers[hIDX].NIDPower, hIDX, 1) is not { } mathPower)
+                {
+                    continue;
+                }
+
+                _mathPowers[hIDX] = mathPower;
                 if (CurrentBuild.Powers[hIDX] != null)
                 {
                     _mathPowers[hIDX].Stacks = CurrentBuild.Powers[hIDX].VariableValue;
@@ -1067,7 +1071,7 @@ namespace Mids_Reborn
             return true;
         }
 
-        private IPower GBPA_SubPass0_AssemblePowerEntry(int nIDPower, int hIDX, int stackingOverride = -1)
+        private IPower? GBPA_SubPass0_AssemblePowerEntry(int nIDPower, int hIDX, int stackingOverride = -1)
         {
             if (nIDPower < 0)
             {
@@ -1122,7 +1126,7 @@ namespace Mids_Reborn
             return ret;
         }
 
-        private void GBPA_AddEnhFX(ref IPower? iPower, int iIndex)
+        private void GBPA_AddEnhFX(ref IPower iPower, int iIndex)
         {
             if (MidsContext.Config is null || CurrentBuild is null || MidsContext.Config.I9.IgnoreEnhFX || iIndex < 0 || iPower is null)
             {
@@ -1168,7 +1172,7 @@ namespace Mids_Reborn
                         {
                             var summon = DatabaseAPI.NidFromUidEntity(uidEntity);
                             var entitySetName = DatabaseAPI.Database.Entities[summon].PowersetFullName.FirstOrDefault();
-                            var entitySet = DatabaseAPI.GetPowersetByFullname(entitySetName);
+                            var entitySet = entitySetName == null ? null : DatabaseAPI.GetPowersetByFullname(entitySetName);
                             if (entitySet != null)
                             {
                                 foreach (var entPower in entitySet.Powers)
@@ -1366,7 +1370,7 @@ namespace Mids_Reborn
         }
 
         // Exists but is never called
-        private static void HandleGrantPowerIncarnate(ref IPower powerMath, IEffect effect1, IReadOnlyList<IPower> buffedPowers, int effIdx, Archetype? at, int hIDX)
+        private static void HandleGrantPowerIncarnate(ref IPower powerMath, IEffect effect1, IReadOnlyList<IPower?> buffedPowers, int effIdx, Archetype? at, int hIDX)
         {
             powerMath.AbsorbEffects(DatabaseAPI.Database.Power[effect1.nSummon], effect1.Duration, 0, at, 1, true, effIdx);
             foreach (var fx in powerMath.Effects)
@@ -1379,17 +1383,17 @@ namespace Mids_Reborn
                 fx.Ticks = effect1.Ticks;
             }
 
-            if (hIDX <= -1) return;
+            if (hIDX <= -1 || buffedPowers[hIDX] is not { } buffedPower) return;
             
-            var length2 = buffedPowers[hIDX].Effects.Length;
-            buffedPowers[hIDX].AbsorbEffects(DatabaseAPI.Database.Power[effect1.nSummon], effect1.Duration, 0, at, 1, true, effIdx);
-            for (var index2 = length2; index2 < buffedPowers[hIDX].Effects.Length; index2++)
+            var length2 = buffedPower.Effects.Length;
+            buffedPower.AbsorbEffects(DatabaseAPI.Database.Power[effect1.nSummon], effect1.Duration, 0, at, 1, true, effIdx);
+            for (var index2 = length2; index2 < buffedPower.Effects.Length; index2++)
             {
-                buffedPowers[hIDX].Effects[index2].ToWho = effect1.ToWho;
-                buffedPowers[hIDX].Effects[index2].Absorbed_Effect = true;
-                buffedPowers[hIDX].Effects[index2].isEnhancementEffect = effect1.isEnhancementEffect;
-                buffedPowers[hIDX].Effects[index2].EffectiveProbability = buffedPowers[hIDX].Effects[index2].Probability * effect1.Probability;
-                buffedPowers[hIDX].Effects[index2].Ticks = effect1.Ticks;
+                buffedPower.Effects[index2].ToWho = effect1.ToWho;
+                buffedPower.Effects[index2].Absorbed_Effect = true;
+                buffedPower.Effects[index2].isEnhancementEffect = effect1.isEnhancementEffect;
+                buffedPower.Effects[index2].EffectiveProbability = buffedPower.Effects[index2].Probability * effect1.Probability;
+                buffedPower.Effects[index2].Ticks = effect1.Ticks;
             }
         }
 
@@ -1822,7 +1826,7 @@ namespace Mids_Reborn
 
                         var iEffect = !flag7
                             ? (Enums.eEnhance)Enums.StringToFlaggedEnum(
-                                Enum.GetName(typeof(Enums.eEffectType), eEffectType2), Enums.eEnhance.None)
+                                Enum.GetName(typeof(Enums.eEffectType), eEffectType2) ?? string.Empty, Enums.eEnhance.None)
                             : Enums.eEnhance.Accuracy;
 
                         var fxMag = eEffectType2 == Enums.eEffectType.Mez
@@ -1831,7 +1835,8 @@ namespace Mids_Reborn
                                 ? powerMath.Effects[effIdx].ETModifies switch
                                 {
                                     Enums.eEffectType.Defense => enhancement.GetEnhancementEffect(Enums.eEnhance.Defense, -1, _buffedPowers[hIDX].Effects[effIdx].Math_Mag),
-                                    Enums.eEffectType.Regeneration => enhancement.GetEnhancementEffect(Enums.eEnhance.Heal, -1, _buffedPowers[hIDX].Effects[effIdx].Math_Mag)
+                                    Enums.eEffectType.Regeneration => enhancement.GetEnhancementEffect(Enums.eEnhance.Heal, -1, _buffedPowers[hIDX].Effects[effIdx].Math_Mag),
+                                    _ => throw new ArgumentOutOfRangeException("ETModifies")
                                 }
                                 : enhancement.GetEnhancementEffect(iEffect, -1, _buffedPowers[hIDX].Effects[effIdx].Math_Mag);
 
@@ -1943,7 +1948,7 @@ namespace Mids_Reborn
 
                     if (!isOk) continue;
                     var iEnh = !isSpecial
-                        ? (Enums.eEnhance) Enums.StringToFlaggedEnum(Enum.GetName(eEffectType.GetType(), eEffectType),
+                        ? (Enums.eEnhance) Enums.StringToFlaggedEnum(Enum.GetName(eEffectType.GetType(), eEffectType) ?? string.Empty,
                             eEnhance)
                         : Enums.eEnhance.Accuracy;
 
@@ -2305,7 +2310,11 @@ namespace Mids_Reborn
 
             var mathPowers = new List<IPower>();
             var buffedPowers = new List<IPower>();
-            var basePower = CurrentBuild.Powers[basePowerHistoryIdx].Power.Clone();
+            if (CurrentBuild.Powers[basePowerHistoryIdx]?.Power?.Clone() is not { } basePower)
+            {
+                return null;
+            }
+
             powers.Add(basePower); // Restore original attached power
 
             for (var i = 0; i < powers.Count; i++)
@@ -2318,10 +2327,10 @@ namespace Mids_Reborn
                 CurrentBuild.Powers[basePowerHistoryIdx].NIDPower = DatabaseAPI.Database.Power.TryFindIndex(e => e?.StaticIndex == powers[i].StaticIndex);
                 GenerateBuffedPowerArray();
 
-                if (i < powers.Count - 1)
+                if (i < powers.Count - 1 && _buffedPowers[basePowerHistoryIdx] is { } buffedPower)
                 {
                     mathPowers.Add(_mathPowers[basePowerHistoryIdx].Clone());
-                    buffedPowers.Add(_buffedPowers[basePowerHistoryIdx].Clone());
+                    buffedPowers.Add(buffedPower.Clone());
                 }
             }
 
@@ -2400,7 +2409,7 @@ namespace Mids_Reborn
             }
         }
 
-        public IPower GetBasePower(int iPower, int nIDPower = -1)
+        public IPower? GetBasePower(int iPower, int nIDPower = -1)
         {
             if (iPower > -1)
             {
@@ -2419,8 +2428,12 @@ namespace Mids_Reborn
                 return null;
             }
 
-            var powerMath = GBPA_SubPass0_AssemblePowerEntry(nIDPower, iPower);
-            powerMath = new Power(DatabaseAPI.GetPowerByFullName(powerMath.FullName));
+            if (GBPA_SubPass0_AssemblePowerEntry(nIDPower, iPower) is not { } assembledPower)
+            {
+                return null;
+            }
+
+            IPower? powerMath = new Power(DatabaseAPI.GetPowerByFullName(assembledPower.FullName));
             powerMath?.ProcessExecutes();
             powerMath?.ApplyModifyEffects();
             powerMath?.AbsorbPetEffects();
@@ -2448,7 +2461,7 @@ namespace Mids_Reborn
             return -1;
         }
 
-        public IPower GetEnhancedPower(int iPower)
+        public IPower? GetEnhancedPower(int iPower)
         {
             if (!((iPower < 0) | (_buffedPowers.Length - 1 < iPower)))
                 return _buffedPowers[iPower];
@@ -2600,14 +2613,30 @@ namespace Mids_Reborn
             var buildOption = MidsContext.Config.BuildOption;
             MidsContext.Config.BuildMode = Enums.dmModes.Normal;
             MidsContext.Config.BuildOption = Enums.dmItem.Slot;
-            var ret = IoGrab2(iStream);
+
+            bool Fail()
+            {
+                MidsContext.Config.BuildMode = buildMode;
+                MidsContext.Config.BuildOption = buildOption;
+                return false;
+            }
+
+            if (IoGrab2(iStream) is not { } ret)
+            {
+                return Fail();
+            }
+
             Name = ret[0];
             Archetype = DatabaseAPI.GetArchetypeByName(ret[2]);
             Origin = DatabaseAPI.GetOriginByName(Archetype, ret[1]);
 
             {
                 // stage: powersets
-                var setData = IoGrab2(iStream);
+                if (IoGrab2(iStream) is not { } setData)
+                {
+                    return Fail();
+                }
+
                 for (var index = 0; index <= Powersets.Length - 1; ++index)
                 {
                     Powersets[index] = DatabaseAPI.GetPowersetByName(setData[index], Archetype.DisplayName);
@@ -2618,7 +2647,11 @@ namespace Mids_Reborn
 
             {
                 // stage: poolLocks
-                var poolData = IoGrab2(iStream);
+                if (IoGrab2(iStream) is not { } poolData)
+                {
+                    return Fail();
+                }
+
                 for (var index = 0; index <= PoolLocked.Length - 1; ++index)
                     PoolLocked[index] = Math.Abs(Convert.ToInt32(poolData[index + 1])) > float.Epsilon;
             }
@@ -2629,9 +2662,19 @@ namespace Mids_Reborn
             IoGrab2(iStream);
             NewBuild(); // NewHistory()
             // stage: read powerEntries
-            var lookup = readPowerEntries(IoGrab2(iStream));
+            if (IoGrab2(iStream) is not { } powerData)
+            {
+                return Fail();
+            }
+
+            var lookup = readPowerEntries(powerData);
             // stage: read slots
-            readSlotEntries(IoGrab2(iStream), lookup);
+            if (IoGrab2(iStream) is not { } slotData)
+            {
+                return Fail();
+            }
+
+            readSlotEntries(slotData, lookup);
             // stage: wrap up
             if (Archetype == null)
                 Archetype = DatabaseAPI.Database.Classes[0];
@@ -2648,7 +2691,11 @@ namespace Mids_Reborn
 
         private static string[]? IoGrab2(StreamReader iStream, string delimiter = ";", char fakeLf = '\0')
         {
-            var str = FileIO.ReadLineUnlimited(iStream, fakeLf);
+            if (FileIO.ReadLineUnlimited(iStream, fakeLf) is not { } str)
+            {
+                return null;
+            }
+
             var strArray = str.Split(Convert.ToChar(delimiter));
             if (strArray.Length < 2)
                 strArray = str.Split(';');
@@ -3572,11 +3619,15 @@ namespace Mids_Reborn
 
         private bool ReadInternalDataUC(StreamReader iStream)
         {
-            string[] strArray1;
+            string[]? strArray1;
             do
             {
                 strArray1 = IoGrab2(iStream, "|");
-            } while (strArray1[0] != AppDataPaths.Headers.Save.Uncompressed || strArray1[0] != AppDataPaths.Headers.Save.LegacyUncompressed);
+                if (strArray1 == null)
+                {
+                    return false;
+                }
+            } while (strArray1[0] != AppDataPaths.Headers.Save.Uncompressed && strArray1[0] != AppDataPaths.Headers.Save.LegacyUncompressed);
 
             strArray1[1] = strArray1[1].Replace(",", ".");
             var nVer = Convert.ToSingle(strArray1[1]);
@@ -3600,11 +3651,19 @@ namespace Mids_Reborn
                                      "). It may not load correctly."), @"Just FYI", MessageBoxButtons.OK, MessageBoxIcon.Information);*/
                 }
 
-                var strArray2 = IoGrab2(iStream, "|");
+                if (IoGrab2(iStream, "|") is not { } strArray2)
+                {
+                    return false;
+                }
+
                 Name = strArray2[0];
                 Archetype = DatabaseAPI.GetArchetypeByName(strArray2[2]);
                 Origin = DatabaseAPI.GetOriginByName(Archetype, strArray2[1]);
-                var strArray3 = IoGrab2(iStream, "|");
+                if (IoGrab2(iStream, "|") is not { } strArray3)
+                {
+                    return false;
+                }
+
                 for (var index = 0; index <= Powersets.Length - 1; ++index)
                 {
                     Powersets[index] =
@@ -3613,7 +3672,11 @@ namespace Mids_Reborn
                         Powersets[index] = DatabaseAPI.GetInherentPowerset();
                 }
 
-                var strArray4 = IoGrab2(iStream, "|");
+                if (IoGrab2(iStream, "|") is not { } strArray4)
+                {
+                    return false;
+                }
+
                 NewBuild();
                 var index1 = 0;
                 var tIDX = CurrentBuild.Powers.Count - (nVer < BuildFormatChange2 ? 2 : 1);

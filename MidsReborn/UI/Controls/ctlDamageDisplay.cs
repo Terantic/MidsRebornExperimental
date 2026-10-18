@@ -8,12 +8,12 @@ using System.Runtime.CompilerServices;
 using System.Windows.Forms;
 using Mids_Reborn.Core;
 using Mids_Reborn.Core.Base.Display;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Mids_Reborn.UI.Controls
 {
     public class ctlDamageDisplay : UserControl
     {
-        private readonly Enums.eDDText pText;
         private ExtendedBitmap? bxBuffer;
         private IContainer components;
         private Graphics myGFX;
@@ -45,7 +45,6 @@ namespace Mids_Reborn.UI.Controls
             Load += ctlDamageDisplay_Load;
             Paint += ctlDamageDisplay_Paint;
             pStyle = (Enums.eDDStyle) 3;
-            pText = 0;
             pGraph = (Enums.eDDGraph) 2;
             pFadeBackStart = Color.Lime;
             pFadeBackEnd = Color.Yellow;
@@ -240,7 +239,7 @@ namespace Mids_Reborn.UI.Controls
             }
         }
 
-        public override string Text
+        [AllowNull] public override string Text
         {
             get => pString;
             set
@@ -270,7 +269,7 @@ namespace Mids_Reborn.UI.Controls
             Size = new Size(312, 104);
         }
 
-        private void ctlDamageDisplay_Load(object sender, EventArgs e)
+        private void ctlDamageDisplay_Load(object? sender, EventArgs e)
         {
             myGFX = CreateGraphics();
             bxBuffer = new ExtendedBitmap(Width, Height);
@@ -284,7 +283,7 @@ namespace Mids_Reborn.UI.Controls
             Draw();
         }
 
-        private void ctlDamageDisplay_Paint(object sender, PaintEventArgs e)
+        private void ctlDamageDisplay_Paint(object? sender, PaintEventArgs e)
         {
             if (bxBuffer != null)
                 myGFX.DrawImage(bxBuffer.Bitmap, e.ClipRectangle, e.ClipRectangle, GraphicsUnit.Pixel);
@@ -529,7 +528,7 @@ namespace Mids_Reborn.UI.Controls
         }
 
         // Token: 0x0600007A RID: 122 RVA: 0x00007516 File Offset: 0x00005716
-        private void ctlDamageDisplay_BackColorChanged(object sender, EventArgs e)
+        private void ctlDamageDisplay_BackColorChanged(object? sender, EventArgs e)
         {
             Draw();
         }

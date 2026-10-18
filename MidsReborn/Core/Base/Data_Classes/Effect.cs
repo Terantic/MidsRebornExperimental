@@ -1,6 +1,7 @@
 using Mids_Reborn.Core.Base.Master_Classes;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -10,7 +11,7 @@ namespace Mids_Reborn.Core.Base.Data_Classes
 {
     public class Effect : IEffect
     {
-        private IPower power;
+        private IPower? power;
 
         public double Rand => new Random().NextDouble();
 
@@ -538,12 +539,12 @@ namespace Mids_Reborn.Core.Base.Data_Classes
 
         public string Special { get; set; }
 
-        public IPower GetPower()
+        public IPower? GetPower()
         {
             return power;
         }
 
-        public void SetPower(IPower power)
+        public void SetPower(IPower? power)
         {
             this.power = power;
         }
@@ -678,7 +679,14 @@ namespace Mids_Reborn.Core.Base.Data_Classes
         public float AtrModRechargeTime { get; set; }
         public float AtrModSecondaryRange { get; set; }
 
-        public List<KeyValue<string, string>> ActiveConditionals { get; set; }
+        private List<KeyValue<string, string>> _activeConditionals = new();
+
+        [AllowNull]
+        public List<KeyValue<string, string>> ActiveConditionals
+        {
+            get => _activeConditionals;
+            set => _activeConditionals = value ?? new List<KeyValue<string, string>>();
+        }
         public bool Validated { get; set; }
 
         public int nOverride
@@ -2139,7 +2147,7 @@ namespace Mids_Reborn.Core.Base.Data_Classes
                    (nIDClassName == -1 || nIDClassName == MidsContext.Archetype.Idx);
         }
 
-        public int CompareTo(object obj)
+        public int CompareTo(object? obj)
         {
             //Less than zero This instance is less than obj. 
             //Zero This instance is equal to obj. 

@@ -17,7 +17,7 @@ namespace Mids_Reborn.Core
     {
         string Extension { get; }
         string Serialize(object o);
-        T Deserialize<T>(string x);
+        T? Deserialize<T>(string x);
     }
 
     public class ConfigData
@@ -382,7 +382,7 @@ namespace Mids_Reborn.Core
                 return;
             }
 
-            Instance = serializer.Deserialize<ConfigData>(File.ReadAllText(AppDataPaths.FNameJsonConfig));
+            Instance = serializer.Deserialize<ConfigData>(File.ReadAllText(AppDataPaths.FNameJsonConfig)) ?? new ConfigData();
             //Instance.InitializeComponent();
         }
 
@@ -465,7 +465,7 @@ namespace Mids_Reborn.Core
             }
         }
 
-        public static RawSaveResult? SaveRawMhd(ISerialize serializer, object o, string fn, RawSaveResult lastSaveInfo)
+        public static RawSaveResult? SaveRawMhd(ISerialize serializer, object o, string fn, RawSaveResult? lastSaveInfo)
         {
             var rootDir = Path.GetDirectoryName(fn);
             var targetFile = Path.Combine(rootDir ?? ".", $"{Path.GetFileNameWithoutExtension(fn)}.{serializer.Extension}");
@@ -660,7 +660,10 @@ namespace Mids_Reborn.Core
                     // May cut System.Collections
                     if (prop.PropertyType.Assembly == objType.Assembly)
                     {
-                        settings.AddRange(EnumerateFields(prop.GetValue(obj, null), $"{prefix}.{prop.Name}"));
+                        if (prop.GetValue(obj, null) is { } value)
+                        {
+                            settings.AddRange(EnumerateFields(value, $"{prefix}.{prop.Name}"));
+                        }
                     }
                     else
                     {

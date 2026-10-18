@@ -57,7 +57,7 @@ namespace Mids_Reborn.Core
         /// <param name="prefix">Prefix string to look for</param>
         /// <param name="nameFound">Will put in nameFound the full matched key name, if any</param>
         /// <returns>True if a key name starts with prefix, false otherwise</returns>
-        public static bool ContainsKeyPrefix<T1, T2>(this Dictionary<T1, T2> dict, string prefix, ref string nameFound)
+        public static bool ContainsKeyPrefix<T1, T2>(this Dictionary<T1, T2> dict, string prefix, ref string nameFound) where T1 : notnull
         {
             foreach (var k in dict.Keys)
             {
@@ -2259,7 +2259,10 @@ namespace Mids_Reborn.Core
                     if (gre.GetStatName(pEnh) == "Slow")
                     {
                         rankedEffect.Name = "Slow";
-                        rankedEffect.Value = InvertStringValue(rankedEffect.Value);
+                        if (rankedEffect.Value != null)
+                        {
+                            rankedEffect.Value = InvertStringValue(rankedEffect.Value);
+                        }
                     }
                     else if ((gre.NumEffects > 1) & gre.IncludedEffects.Select(e => pEnh.Effects[e].EffectType).Any(e => e != pEnh.Effects[gre.IncludedEffects[0]].EffectType))
                     {

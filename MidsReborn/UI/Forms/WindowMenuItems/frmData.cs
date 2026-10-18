@@ -26,18 +26,18 @@ namespace Mids_Reborn.UI.Forms.WindowMenuItems
             _onClosing = onClosing;
         }
 
-        private void frmData_FormClosed(object sender, FormClosedEventArgs e)
+        private void frmData_FormClosed(object? sender, FormClosedEventArgs e)
         {
             StoreLocation();
             _onClosing();
         }
 
-        private void frmData_Load(object sender, EventArgs e)
+        private void frmData_Load(object? sender, EventArgs e)
         {
             pInfo.SetPopup(new PopUp.PopupData());
         }
 
-        private void frmData_ResizeEnd(object sender, EventArgs e)
+        private void frmData_ResizeEnd(object? sender, EventArgs e)
         {
             pInfo.Size = ClientSize;
         }

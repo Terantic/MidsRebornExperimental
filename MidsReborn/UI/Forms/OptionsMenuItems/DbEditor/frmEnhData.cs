@@ -889,7 +889,7 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
             cbSubType.EndUpdate();
         }
 
-        private void frmEnhData_Load(object sender, EventArgs e)
+        private void frmEnhData_Load(object? sender, EventArgs e)
         {
             FillSetList();
             FillEffectList();
@@ -966,7 +966,7 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
             }
         }
 
-        private void pnlClass_MouseDown(object sender, MouseEventArgs e)
+        private void pnlClass_MouseDown(object? sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Right)
             {
@@ -1017,7 +1017,7 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
             }
         }
 
-        private void pnlClass_MouseMove(object sender, MouseEventArgs e)
+        private void pnlClass_MouseMove(object? sender, MouseEventArgs e)
         {
             var num1 = -1;
             var num2 = -1;
@@ -1046,14 +1046,14 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
                 lblClass.Text = "";
         }
 
-        private void pnlClass_Paint(object sender, PaintEventArgs e)
+        private void pnlClass_Paint(object? sender, PaintEventArgs e)
         {
             if (bxClass == null)
                 return;
             e.Graphics.DrawImageUnscaled(bxClass.Bitmap, 0, 0);
         }
 
-        private void pnlClassList_MouseDown(object sender, MouseEventArgs e)
+        private void pnlClassList_MouseDown(object? sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Right)
             {
@@ -1099,7 +1099,7 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
             }
         }
 
-        private void pnlClassList_MouseMove(object sender, MouseEventArgs e)
+        private void pnlClassList_MouseMove(object? sender, MouseEventArgs e)
         {
             var num1 = -1;
             var num2 = -1;
@@ -1122,7 +1122,7 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
                 lblClass.Text = string.Empty;
         }
 
-        private void pnlClassList_Paint(object sender, PaintEventArgs e)
+        private void pnlClassList_Paint(object? sender, PaintEventArgs e)
         {
             if (bxClassList == null)
                 return;

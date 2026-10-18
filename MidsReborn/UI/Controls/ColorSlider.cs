@@ -41,6 +41,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 using Mids_Reborn.Core.Utils;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Mids_Reborn.UI.Controls
 {
@@ -816,7 +817,7 @@ namespace Mids_Reborn.UI.Controls
         Description("Get or Sets the Font of the Text being displayed."),
         DesignerSerializationVisibility(DesignerSerializationVisibility.Visible),
         EditorBrowsable(EditorBrowsableState.Always)]
-        public override Font Font
+        [AllowNull] public override Font Font
         {
             get
             {

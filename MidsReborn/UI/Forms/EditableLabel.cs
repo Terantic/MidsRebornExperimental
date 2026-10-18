@@ -1,5 +1,6 @@
 ﻿using System.Drawing;
 using System.Windows.Forms;
+using System.Diagnostics.CodeAnalysis;
 
 // https://stackoverflow.com/questions/2309662/editable-label-controls
 namespace Mids_Reborn.UI.Forms
@@ -33,7 +34,7 @@ namespace Mids_Reborn.UI.Forms
             ShowInTaskbar = false;
         }
 
-        public override string Text
+        [AllowNull] public override string Text
         {
             get
             {
@@ -56,7 +57,7 @@ namespace Mids_Reborn.UI.Forms
             Size = size;
         }
 
-        private void OnKeyDown(object sender, KeyEventArgs e)
+        private void OnKeyDown(object? sender, KeyEventArgs e)
         {
             switch (e.KeyData)
             {

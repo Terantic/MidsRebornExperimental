@@ -68,7 +68,7 @@ namespace Mids_Reborn.Core.Base.Display
         {
             get
             {
-                Graphics graphics;
+                Graphics? graphics;
                 if (_isInitialized)
                 {
                     _isNew = false;

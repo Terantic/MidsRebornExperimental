@@ -84,6 +84,7 @@ namespace Mids_Reborn.UI.Controls.Skia
             Tag = other.Tag;
         }
 
+        [CLSCompliant(false)]
         public SKFont GetOrCreateFont(Font baseFont)
         {
             const float dpi = 96f;

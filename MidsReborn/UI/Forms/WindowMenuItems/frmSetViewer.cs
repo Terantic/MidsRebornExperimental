@@ -867,18 +867,18 @@ namespace Mids_Reborn.UI.Forms.WindowMenuItems
             bar.SetTip(ttext);
         }
 
-        private void frmSetViewer_FormClosed(object sender, FormClosedEventArgs e)
+        private void frmSetViewer_FormClosed(object? sender, FormClosedEventArgs e)
         {
             myParent.FloatSets(false);
         }
 
-        private void frmSetViewer_Load(object sender, EventArgs e)
+        private void frmSetViewer_Load(object? sender, EventArgs e)
         {
             lstSets.EnableDoubleBuffer();
             panelBars.EnableDoubleBuffer();
         }
 
-        private void frmSetViewer_Move(object sender, EventArgs e)
+        private void frmSetViewer_Move(object? sender, EventArgs e)
         {
             StoreLocation();
         }

@@ -266,7 +266,6 @@ namespace Mids_Reborn.Core
 
         private string GetEffectsStringLong(IEnhancement enhancement, IPower? enhBoostPower)
         {
-            string str1;
             var stringBuilder = new StringBuilder();
             var flag1 = false;
             var flag2 = false;
@@ -295,7 +294,7 @@ namespace Mids_Reborn.Core
                             }
 
                             var id = (Enums.eEnhance)sEffect.Enhance.ID;
-                            string str2;
+                            string? str2;
                             if (id == Enums.eEnhance.Mez)
                             {
                                 var subId = (Enums.eMez)sEffect.Enhance.SubID;

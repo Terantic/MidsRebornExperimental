@@ -192,7 +192,7 @@ namespace Mids_Reborn.Core
                 if (bonusItemArray[index].Index[i] < 0) continue;
                 if (bonusItemArray[index].Index[i] > DatabaseAPI.Database.Power.Length - 1) continue;
 
-                var linkedPower = (Power) DatabaseAPI.Database.Power[bonusItemArray[index].Index[i]];
+                if (DatabaseAPI.Database.Power[bonusItemArray[index].Index[i]] is not Power linkedPower) continue;
                 ret.Add(linkedPower.Clone());
             }
 

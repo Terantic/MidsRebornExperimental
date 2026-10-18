@@ -308,7 +308,7 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
             }
         }
 
-        private void frmEnhEdit_Load(object sender, EventArgs e)
+        private void frmEnhEdit_Load(object? sender, EventArgs e)
         {
             _bFrm = new frmBusy();
             lvEnh.EnableDoubleBuffer();

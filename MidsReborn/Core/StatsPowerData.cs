@@ -508,8 +508,10 @@ namespace Mids_Reborn.Core
                     continue;
                 }
 
+                // A stale buffed power array has no entry yet: show the unenhanced power
+                pEnh ??= pBase;
                 var baseDmg = pBase.FXGetDamageValue();
-                var enhDmg = pEnh?.FXGetDamageValue(pEnh == null) ?? 0;
+                var enhDmg = pEnh.FXGetDamageValue();
 
                 powers.Add(i,
                     baseDmg <= enhDmg
@@ -574,11 +576,10 @@ namespace Mids_Reborn.Core
                         var idx2 = powersDict[rootPowers[p.FullName]];
                         powersetsPowers.Add(k++, new KeyValuePair<IPower, IPower>(powers[idx2].Key.Clone(), powers[idx2].Value.Clone()));
                     }
-                    else
+                    else if (p.Clone() is { } pBase)
                     {
-                        var pBase = p.Clone();
-                        pBase?.ProcessExecutes();
-                        pBase?.AbsorbPetEffects();
+                        pBase.ProcessExecutes();
+                        pBase.AbsorbPetEffects();
                         powersetsPowers.Add(k++, new KeyValuePair<IPower, IPower>(pBase, pBase));
                     }
                 }

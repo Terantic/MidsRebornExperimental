@@ -200,7 +200,7 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
             lvEntity.EndUpdate();
         }
 
-        private void frmEntityListing_Load(object sender, EventArgs e)
+        private void frmEntityListing_Load(object? sender, EventArgs e)
         {
             lvEntity.EnableDoubleBuffer();
             DisplayList();

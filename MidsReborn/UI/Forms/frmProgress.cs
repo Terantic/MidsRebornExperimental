@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows.Forms;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Mids_Reborn.UI.Forms
 {
@@ -32,7 +33,7 @@ namespace Mids_Reborn.UI.Forms
         public ProgressBar Bar => progressBar1;
         public Label Label => label1;
 
-        public override string Text
+        [AllowNull] public override string Text
         {
             get => base.Text;
             set

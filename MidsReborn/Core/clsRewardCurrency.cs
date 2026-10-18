@@ -63,7 +63,7 @@ namespace Mids_Reborn.Core
                     l2.Add(kv);
                     var cnvRate = AllowedConversions[cLink];
                     var t = CurrencyChangeInner(kv, c2, (int)Math.Floor((decimal)(amount / cnvRate.Key * cnvRate.Value)), ref l2);
-                    if (t != null & l2.Count < l)
+                    if (t != null && l2.Count < l)
                     {
                         l = l2.Count;
                         p = l2.Clone();
@@ -78,7 +78,7 @@ namespace Mids_Reborn.Core
                     l2.Add(kv);
                     var cnvRate = AllowedConversions[cLinkRev];
                     var t = CurrencyChangeInner(kv, c2, (int)Math.Floor((decimal)(amount / cnvRate.Value * cnvRate.Key)), ref l2);
-                    if (t != null & l2.Count < l)
+                    if (t != null && l2.Count < l)
                     {
                         l = l2.Count;
                         p = l2.Clone();

@@ -21,7 +21,7 @@ namespace Mids_Reborn.Core
             return _serializeFunc(o);
         }
 
-        public T Deserialize<T>(string x)
+        public T? Deserialize<T>(string x)
         {
             return JsonConvert.DeserializeObject<T>(x);
         }
@@ -59,9 +59,9 @@ namespace Mids_Reborn.Core
         {
             public override bool CanConvert(Type objectType) => objectType == typeof(TAbstract);
 
-            public override object ReadJson(JsonReader reader, Type type, object value, JsonSerializer jser) => jser.Deserialize<TReal>(reader);
+            public override object? ReadJson(JsonReader reader, Type type, object? value, JsonSerializer jser) => jser.Deserialize<TReal>(reader);
 
-            public override void WriteJson(JsonWriter writer, object value, JsonSerializer jser) => jser.Serialize(writer, value);
+            public override void WriteJson(JsonWriter writer, object? value, JsonSerializer jser) => jser.Serialize(writer, value);
         }
     }
 }

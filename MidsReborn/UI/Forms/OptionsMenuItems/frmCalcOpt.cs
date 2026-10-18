@@ -20,7 +20,6 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems
 
         private readonly string[] scenarioExample;
 
-        private bool fcNoUpdate;
         private readonly IEnumerable<RadioButton> _updRadios;
 
         private ConfigData.AutoUpdType _autoUpdType = MidsContext.Config.AutomaticUpdates.Type;
@@ -39,7 +38,6 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems
         {
             Load += frmCalcOpt_Load;
             Closing += frmCalcOpt_Closing;
-            fcNoUpdate = false;
             scenarioExample = new string[20];
             scenActs = new string[20][];
             defActs = new short[20];

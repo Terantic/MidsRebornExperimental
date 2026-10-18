@@ -617,7 +617,7 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
             }
         }
 
-        private void frmSetEdit_Load(object sender, EventArgs e)
+        private void frmSetEdit_Load(object? sender, EventArgs e)
         {
             _setBonusList = DatabaseAPI.NidPowers("set_bonus.set_bonus");
             if (MySet.Bonus.Length < 1)

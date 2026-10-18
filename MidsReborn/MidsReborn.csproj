@@ -126,9 +126,6 @@
     <Compile Update="UI\Controls\GenericSelector.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="UI\Controls\GFXLabel.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
     <Compile Update="UI\Controls\I9Picker.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -160,9 +157,6 @@
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Update="UI\Controls\Page.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Update="UI\Controls\PairedList.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Update="UI\Controls\PairedListEx.cs">
@@ -298,13 +292,7 @@
     <Compile Update="UI\Forms\WindowMenuItems\frmData.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="UI\Forms\WindowMenuItems\frmDPSCalc.cs">
-      <SubType>Form</SubType>
-    </Compile>
     <Compile Update="UI\Forms\WindowMenuItems\frmEntityDetails.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Update="UI\Forms\WindowMenuItems\frmIncarnates.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="UI\Forms\WindowMenuItems\frmMiniList.cs">

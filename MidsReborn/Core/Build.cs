@@ -965,11 +965,16 @@ namespace Mids_Reborn.Core
 
         public bool PowerUsed(IPower? power)
         {
-            return FindInToonHistory(power.PowerIndex) > -1;
+            return power != null && FindInToonHistory(power.PowerIndex) > -1;
         }
 
-        public bool PowerActive(IPower power)
+        public bool PowerActive(IPower? power)
         {
+            if (power == null)
+            {
+                return false;
+            }
+
             foreach (var pe in Powers)
             {
                 if (pe is { Power: not null } && pe.Power.PowerIndex == power.PowerIndex)
@@ -1734,7 +1739,7 @@ namespace Mids_Reborn.Core
                 };
             }
 
-            public override bool Equals(object obj)
+            public override bool Equals(object? obj)
             {
                 if (obj is FXIdentifierKey o)
                 {

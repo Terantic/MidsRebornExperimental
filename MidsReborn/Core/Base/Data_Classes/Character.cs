@@ -373,6 +373,7 @@ namespace Mids_Reborn.Core.Base.Data_Classes
             return Powersets.Select((ps, i) => new { I = i, Ps = ps?.FullName, N = names[i] }).Where(x => !string.IsNullOrWhiteSpace(x.N) && x.Ps == null).Select(x => (x.I, x.N));
         }
 
+        [CLSCompliant(false)]
         public void LoadPowerSetsByName(IEnumerable<string> sets)
         {
             Powersets = sets.Select(set => DatabaseAPI.Database.Powersets.FirstOrDefault(ps => ps?.FullName == set)).Select(powerSet => powerSet ?? new Powerset()).ToArray();
@@ -797,8 +798,7 @@ namespace Mids_Reborn.Core.Base.Data_Classes
                     }
 
                     if (CurrentBuild != null && (power.Chosen || !CurrentBuild.PowerUsed(power.Power))) continue;
-                    var displayItem = InherentDisplayList.FirstOrDefault(x => x.Power.FullName == power.Power.FullName);
-                    power.Power.DisplayLocation = InherentDisplayList.IndexOf(displayItem);
+                    power.Power.DisplayLocation = InherentDisplayList.FindIndex(x => x.Power.FullName == power.Power.FullName);
                 }
             }
         }
@@ -1233,7 +1233,7 @@ namespace Mids_Reborn.Core.Base.Data_Classes
             return strArray2;
         }
 
-        private static PopUp.Section? PopSetBonusListing(int sIdx, PowerEntry power)
+        private static PopUp.Section? PopSetBonusListing(int sIdx, PowerEntry? power)
         {
             var section1 = new PopUp.Section();
             section1.Add("Set Bonus:", PopUp.Colors.Title);
@@ -1286,7 +1286,7 @@ namespace Mids_Reborn.Core.Base.Data_Classes
             for (var index = 0; index < enhancementSet.SpecialBonus.Length; index++)
             {
                 var checkStatus = false;
-                List<Power> specialPowers = null;
+                List<Power>? specialPowers = null;
                 if (enhancementSet.SpecialBonus.Length > 0)
                 {
                     specialPowers = enhancementSet.SpecialBonus[^1].Index.Length switch
@@ -1478,7 +1478,7 @@ namespace Mids_Reborn.Core.Base.Data_Classes
             return section1;
         }
 
-        public static PopUp.PopupData PopSetInfo(int sIdx, PowerEntry powerEntry = null)
+        public static PopUp.PopupData PopSetInfo(int sIdx, PowerEntry? powerEntry = null)
         {
             if (sIdx < 0)
             {
@@ -1521,7 +1521,7 @@ namespace Mids_Reborn.Core.Base.Data_Classes
             return popupData1;
         }
 
-        private static PopUp.Section? PopSetEnhList(int sIdx, PowerEntry powerEntry)
+        private static PopUp.Section? PopSetEnhList(int sIdx, PowerEntry? powerEntry)
         {
             if (sIdx < 0 || sIdx >= DatabaseAPI.Database.EnhancementSets.Count)
             {

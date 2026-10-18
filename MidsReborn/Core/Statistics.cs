@@ -184,7 +184,8 @@ namespace Mids_Reborn.Core
                     Enums.eSpeedMeasure.MetersPerSecond => iSpeed * 0.2777778f,
                     Enums.eSpeedMeasure.MilesPerHour => iSpeed * 0.621371242f,
                     _ => iSpeed
-                }
+                },
+                _ => throw new ArgumentOutOfRangeException(nameof(baseUnit))
             };
         }
 

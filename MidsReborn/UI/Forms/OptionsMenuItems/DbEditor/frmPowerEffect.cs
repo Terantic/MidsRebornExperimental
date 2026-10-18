@@ -50,7 +50,7 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
             _effectIndex = fxIndex;
         }
 
-        private void frmPowerEffect_Load(object sender, EventArgs e)
+        private void frmPowerEffect_Load(object? sender, EventArgs e)
         {
             FillComboBoxes();
             DisplayEffectData();
@@ -624,13 +624,13 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
 
         private void FullPaste()
         {
-            if (!Clipboard.ContainsData(@"MidsEffectData"))
+            if (Clipboard.GetData(@"MidsEffectData") is not string effectData || Serializer.GetSerializer().Deserialize<Effect>(effectData) is not { } effect)
             {
                 MessageBox.Show(@"The clipboard does not contain any effect data.", @"Invalid Data", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            MyFx = Serializer.GetSerializer().Deserialize<Effect>((string)Clipboard.GetData(@"MidsEffectData"));
+            MyFx = effect;
 
             DisplayEffectData();
         }

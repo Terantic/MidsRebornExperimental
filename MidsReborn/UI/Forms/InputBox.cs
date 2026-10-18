@@ -239,12 +239,12 @@ namespace Mids_Reborn.UI.Forms
             return Show(prompt, title, isPassword, defaultText, icon, validator, -1, -1);
         }
 
-        private void InputTextBox_TextChanged(object sender, EventArgs e)
+        private void InputTextBox_TextChanged(object? sender, EventArgs e)
         {
             ErrorProviderText.SetError(InputTextBox, "");
         }
 
-        private void InputTextBox_Validating(object sender, CancelEventArgs e)
+        private void InputTextBox_Validating(object? sender, CancelEventArgs e)
         {
             if (Validator == null)
             {
@@ -267,7 +267,7 @@ namespace Mids_Reborn.UI.Forms
             ErrorProviderText.SetError(InputTextBox, args.Message);
         }
 
-        private void IconButton1_Click(object sender, EventArgs e)
+        private void IconButton1_Click(object? sender, EventArgs e)
         {
             InputTextBox.UseSystemPasswordChar = InputTextBox.UseSystemPasswordChar switch
             {
@@ -276,13 +276,13 @@ namespace Mids_Reborn.UI.Forms
             };
         }
 
-        private void ButtonCancel_Click(object sender, EventArgs e)
+        private void ButtonCancel_Click(object? sender, EventArgs e)
         {
             DialogResult = DialogResult.Cancel;
             Close();
         }
 
-        private void ButtonOk_Click(object sender, EventArgs e)
+        private void ButtonOk_Click(object? sender, EventArgs e)
         {
             DialogResult = DialogResult.OK;
             Close();

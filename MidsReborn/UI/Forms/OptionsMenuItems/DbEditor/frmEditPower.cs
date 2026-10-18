@@ -1712,7 +1712,7 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
             SPFillList();
         }
 
-        private void frmEditPower_Load(object sender, EventArgs e)
+        private void frmEditPower_Load(object? sender, EventArgs e)
         {
             RedrawEnhPicker();
             FillComboBoxes();
@@ -3581,7 +3581,8 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
                     {
                         0 => myPower?.Effects[i].Expressions.Duration,
                         1 => myPower?.Effects[i].Expressions.Magnitude,
-                        2 => myPower?.Effects[i].Expressions.Probability
+                        2 => myPower?.Effects[i].Expressions.Probability,
+                        _ => throw new ArgumentOutOfRangeException(nameof(j))
                     };
 
                     if (expr == null)
@@ -3645,14 +3646,14 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
             return objectType == typeof(TFromType);
         }
 
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
         {
             return serializer.Deserialize<TToType>(reader);
         }
 
         public override bool CanWrite => false;
 
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
         {
             throw new NotImplementedException();
         }

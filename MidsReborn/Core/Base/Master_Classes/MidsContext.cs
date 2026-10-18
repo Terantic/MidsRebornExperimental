@@ -24,7 +24,6 @@ namespace Mids_Reborn.Core.Base.Master_Classes
 
         internal static Archetype? Archetype;
         internal static Character? Character;
-        internal static Build? Build;
 
         public static ConfigData? Config => ConfigData.Current;
     }

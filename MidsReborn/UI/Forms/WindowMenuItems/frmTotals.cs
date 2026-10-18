@@ -42,12 +42,12 @@ namespace Mids_Reborn.UI.Forms.WindowMenuItems
             return num is >= 1.0000000116861E-07 and > 0;
         }
 
-        private void FrmTotalsFormClosed(object sender, FormClosedEventArgs e)
+        private void FrmTotalsFormClosed(object? sender, FormClosedEventArgs e)
         {
             _myParent.FloatTotals(false, true);
         }
 
-        private void FrmTotalsLoad(object sender, EventArgs e)
+        private void FrmTotalsLoad(object? sender, EventArgs e)
         {
             if (MainModule.MidsController.IsAppInitialized)
             {
@@ -88,12 +88,12 @@ namespace Mids_Reborn.UI.Forms.WindowMenuItems
             SetFonts();
         }
 
-        private void FrmTotalsMove(object sender, EventArgs e)
+        private void FrmTotalsMove(object? sender, EventArgs e)
         {
             StoreLocation();
         }
 
-        private void FrmTotalsResize(object sender, EventArgs e)
+        private void FrmTotalsResize(object? sender, EventArgs e)
         {
             if (!_loaded)
             {

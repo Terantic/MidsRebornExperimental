@@ -54,13 +54,13 @@ namespace Mids_Reborn.UI.Forms
             myOwner.UnlockFloatingStats();
         }
 
-        private void frmFloatingStats_Closed(object sender, EventArgs e)
+        private void frmFloatingStats_Closed(object? sender, EventArgs e)
         {
             myOwner.ShowAnchoredDataView();
             Hide();
         }
 
-        private void frmFloatingStats_Load(object sender, EventArgs e)
+        private void frmFloatingStats_Load(object? sender, EventArgs e)
         {
             dvFloat.MoveDisable = true;
             dvFloat.SetScreenBounds(dvFloat.Bounds);

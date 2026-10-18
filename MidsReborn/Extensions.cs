@@ -16,9 +16,9 @@ namespace Mids_Reborn
             Value = cb;
         }
 
-        public T SelectedItem
+        public T? SelectedItem
         {
-            get => (T) Value.SelectedItem;
+            get => Value.SelectedItem is T item ? item : default;
             set => Value.SelectedItem = value;
         }
 
@@ -42,7 +42,7 @@ namespace Mids_Reborn
 
         public T this[int x]
         {
-            get => (T) Value.Items[x];
+            get => Value.Items[x] is T item ? item : throw new InvalidCastException();
             set => Value.Items[x] = value;
         }
 
@@ -71,14 +71,14 @@ namespace Mids_Reborn
 
     public static class Extensions
     {
-        public static void EventHandlerWithCatch(this IComponent _, Action f, string titlingOpt = null,
-            string captionOpt = null)
+        public static void EventHandlerWithCatch(this IComponent _, Action f, string? titlingOpt = null,
+            string? captionOpt = null)
         {
             ExecuteWithCatchMessage(f, titlingOpt, captionOpt);
         }
 
         // execute immediately with a catch
-        private static void ExecuteWithCatchMessage(this Action f, string titlingOpt = null, string captionOpt = null)
+        private static void ExecuteWithCatchMessage(this Action f, string? titlingOpt = null, string? captionOpt = null)
         {
             try
             {

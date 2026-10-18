@@ -7,7 +7,7 @@ using System.Windows.Forms;
 
 namespace Mids_Reborn.UI.Controls
 {
-    public partial class ctlTotalsTabStrip : UserControl, INotifyPropertyChanged
+    public partial class ctlTotalsTabStrip : UserControl
     {
         #region Sub-classes
 
@@ -28,7 +28,6 @@ namespace Mids_Reborn.UI.Controls
         #region Events
         public delegate void TabClickEventHandler(int index);
         public event TabClickEventHandler? TabClick;
-        public event PropertyChangedEventHandler PropertyChanged;
         #endregion
 
         #region Private properties
@@ -118,17 +117,9 @@ namespace Mids_Reborn.UI.Controls
         {
             SetStyle(ControlStyles.Opaque | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.ResizeRedraw | ControlStyles.UserPaint, true);
             InitializeComponent();
-
-            PropertyChanged += OnPropertyChanged;
         }
 
         #region Event handlers
-        public void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
-        {
-            // Need to filter on property name ?
-            Refresh();
-        }
-
         protected override void OnPaint(PaintEventArgs e)
         {
             // Parent is minimized,

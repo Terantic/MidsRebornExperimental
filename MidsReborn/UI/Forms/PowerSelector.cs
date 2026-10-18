@@ -17,7 +17,7 @@ namespace Mids_Reborn.UI.Forms
             InitializeComponent();
         }
 
-        private async void OnLoad(object sender, EventArgs e)
+        private async void OnLoad(object? sender, EventArgs e)
         {
             await FillGroups();
         }

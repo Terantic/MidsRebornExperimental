@@ -51,7 +51,7 @@ namespace Mids_Reborn.UI.Forms
             myParent = iParent;
         }
 
-        private void frmSetFind_Load(object sender, EventArgs e)
+        private void frmSetFind_Load(object? sender, EventArgs e)
         {
             lvSet.EnableDoubleBuffer();
             lvBonus.EnableDoubleBuffer();
@@ -516,7 +516,7 @@ namespace Mids_Reborn.UI.Forms
             lvSet.EndUpdate();
         }
 
-        private void frmSetFind_FormClosed(object sender, FormClosedEventArgs e)
+        private void frmSetFind_FormClosed(object? sender, FormClosedEventArgs e)
         {
             myParent.FloatSetFinder(false);
         }

@@ -13,7 +13,6 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
 {
     public partial class FrmGCMEditor : Form
     {
-        private readonly MainWindow2 _myParent;
         private frmBusy _bFrm;
 
 		private void BusyHide()
@@ -28,17 +27,16 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
             _bFrm.Show(this);
         }
 
-		public FrmGCMEditor(ref MainWindow2 iParent)
+		public FrmGCMEditor()
         {
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.ResizeRedraw | ControlStyles.OptimizedDoubleBuffer, true);
             Load += frmGCMEditor_Load;
             InitializeComponent();
             Icon = Resources.MRB_Icon_Concept;
-            _myParent = iParent;
             _bFrm = new frmBusy();
         }
 
-        private void frmGCMEditor_Load(object sender, EventArgs e)
+        private void frmGCMEditor_Load(object? sender, EventArgs e)
         {
             CenterToParent();
             PopulateInfo();

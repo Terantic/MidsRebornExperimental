@@ -81,7 +81,7 @@ namespace Mids_Reborn.Core
                             : $"Enh({Enum.GetName(Enums.eMezShort.None.GetType(), fx.MezType)})",
                         Enums.eEffectType.Defense => "Enh(Def)",
                         Enums.eEffectType.Resistance => "Enh(Res)",
-                        _ => Str.CapString(Enum.GetName(fx.ETModifies.GetType(), fx.ETModifies), 7)
+                        _ => Str.CapString(Enum.GetName(fx.ETModifies.GetType(), fx.ETModifies) ?? string.Empty, 7)
                     };
 
                     shortFxBase.Assign(pBase.GetEffectMagSum(fx.EffectType,
@@ -530,7 +530,7 @@ namespace Mids_Reborn.Core
 
             public static string GenerateTipFromEffect(IPower basePower, Enums.ShortFX tag)
             {
-                var effects = tag.Index.Select(e => basePower.Effects[e]).ToList();
+                var effects = (tag.Index ?? Array.Empty<int>()).Select(e => basePower.Effects[e]).ToList();
                 var effectTypes = effects.Select(e => e.EffectType).ToList();
                 var effectDmgTypes = effects.Select(e => e.DamageType).ToList();
                 var effectETModifies = effects.Select(e => e.ETModifies).ToList();
