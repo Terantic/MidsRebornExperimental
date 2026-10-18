@@ -56,12 +56,6 @@ namespace Mids_Reborn.Core
         }
 
         /// <summary>
-        /// Validate a single Config conditional against the combat context settings
-        /// </summary>
-        /// <param name="settingName">Config field name, e.g. cfg.PlayerSettings.hppercent or cfg.player.isalive</param>
-        /// <param name="conditionValue">Conditional value: operator and operand, e.g. "&lt; 76" or "= True"</param>
-        /// <returns>True if the current setting satisfies the conditional</returns>
-        /// <summary>
         /// Stack count a Stacks conditional compares against: the current build's entry for the power when it has one,
         /// since the shared database power keeps whatever value an earlier build or UI change gave it.
         /// </summary>
@@ -75,6 +69,12 @@ namespace Mids_Reborn.Core
             return pe?.VariableValue ?? conditionPower.Stacks;
         }
 
+        /// <summary>
+        /// Validate a single Config conditional against the combat context settings
+        /// </summary>
+        /// <param name="settingName">Config field name, e.g. cfg.PlayerSettings.hppercent or cfg.player.isalive</param>
+        /// <param name="conditionValue">Conditional value: operator and operand, e.g. "&lt; 76" or "= True"</param>
+        /// <returns>True if the current setting satisfies the conditional</returns>
         public static bool ValidateConfigCondition(string settingName, string conditionValue)
         {
             var cVal = conditionValue.Split(' ', StringSplitOptions.RemoveEmptyEntries);
