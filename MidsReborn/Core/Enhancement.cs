@@ -119,7 +119,7 @@ namespace Mids_Reborn.Core
                 Effect[index].Schedule = (Enums.eSchedule)reader.ReadInt32();
                 Effect[index].Multiplier = reader.ReadSingle();
                 ref var local = ref Effect[index];
-                Effect effect;
+                Effect? effect;
                 if (!reader.ReadBoolean())
                 {
                     effect = null;

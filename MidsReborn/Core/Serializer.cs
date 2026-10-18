@@ -21,7 +21,7 @@ namespace Mids_Reborn.Core
             return _serializeFunc(o);
         }
 
-        public T Deserialize<T>(string x)
+        public T? Deserialize<T>(string x)
         {
             return JsonConvert.DeserializeObject<T>(x);
         }

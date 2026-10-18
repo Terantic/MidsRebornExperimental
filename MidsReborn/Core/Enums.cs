@@ -1539,10 +1539,10 @@ namespace Mids_Reborn.Core
 
                 if (noFlag)
                 {
-                    return (int) values.GetValue(index2);
+                    return Convert.ToInt32(values.GetValue(index2));
                 }
 
-                num1 += (int) values.GetValue(index2);
+                num1 += Convert.ToInt32(values.GetValue(index2));
             }
 
             return num1;
@@ -1568,7 +1568,10 @@ namespace Mids_Reborn.Core
                 select Array.IndexOf(names, t)
                 into index2
                 where index2 > -1
-                select (T) values.GetValue(index2));
+                select values.GetValue(index2)
+                into value
+                where value is T
+                select (T) value);
                 
             return objList.ToArray();
         }
@@ -1807,7 +1810,7 @@ namespace Mids_Reborn.Core
                 values.Add(iValue);
                 Value = values.ToArray();
 
-                var indexes = Index.ToList();
+                var indexes = Index?.ToList() ?? new List<int>();
                 indexes.Add(iIndex);
                 Index = indexes.ToArray();
                 

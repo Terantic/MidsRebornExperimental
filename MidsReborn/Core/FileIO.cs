@@ -111,7 +111,7 @@ namespace Mids_Reborn.Core
             return true;
         }
 
-        public static string ReadLineUnlimited(StreamReader iStream, char FakeLF)
+        public static string? ReadLineUnlimited(StreamReader iStream, char FakeLF)
         {
             var bytes = new byte[65536];
             var count = 0;

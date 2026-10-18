@@ -9,7 +9,7 @@ namespace Mids_Reborn.Core
     {
         private string _fullName;
 
-        private string _groupName;
+        private string? _groupName;
         private PowersetGroup _powersetGroup;
 
         public Powerset()
@@ -152,18 +152,9 @@ namespace Mids_Reborn.Core
 
         public string GroupName
         {
-            get
-            {
-                string str;
-                if ((str = _groupName) == null)
-                {
-                    str = _groupName = FullName.Contains(".")
-                        ? FullName.Substring(0, FullName.IndexOf(".", StringComparison.Ordinal))
-                        : string.Empty;
-                }
-
-                return str;
-            }
+            get => _groupName ??= FullName.Contains(".")
+                ? FullName.Substring(0, FullName.IndexOf(".", StringComparison.Ordinal))
+                : string.Empty;
             set => _groupName = value;
         }
 

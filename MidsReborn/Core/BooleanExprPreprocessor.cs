@@ -63,8 +63,13 @@ namespace Mids_Reborn.Core
         /// </summary>
         /// <param name="conditionPower">Power named by the conditional</param>
         /// <returns>Stack count</returns>
-        public static int GetConditionStacks(IPower conditionPower)
+        public static int GetConditionStacks(IPower? conditionPower)
         {
+            if (conditionPower == null)
+            {
+                return 0;
+            }
+
             var pe = MidsContext.Character?.CurrentBuild?.Powers
                 .FirstOrDefault(e => e?.Power != null && e.Power.StaticIndex == conditionPower.StaticIndex);
 

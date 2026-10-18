@@ -93,7 +93,7 @@ namespace Mids_Reborn.Core.Base.Display
                 }
             }
 
-            public int Add(Section section = null)
+            public int Add(Section? section = null)
             {
                 Sections ??= Array.Empty<Section>();
                 section ??= new Section

@@ -23,7 +23,7 @@ namespace Mids_Reborn.Core.Base.Data_Classes
 
         public IPowerset?[] Powersets { get; set; }
 
-        public Archetype[]? Classes { get; set; }
+        public Archetype?[] Classes { get; set; } = [];
 
         public IEnhancement[] Enhancements { get; set; }
 

@@ -7347,7 +7347,7 @@ The default position/state will be used upon next launch.", @"Window State Warni
                 cbOrigin.SelectedIndex = MidsContext.Character.Origin < cbOrigin.Items.Count
                     ? MidsContext.Character.Origin
                     : 0;
-                I9Gfx.SetOrigin(cbOrigin.SelectedItem);
+                I9Gfx.SetOrigin(cbOrigin.SelectedItem ?? string.Empty);
             }
 
             ComboCheckPS(CbtPrimary.Value, Enums.PowersetType.Primary, Enums.ePowerSetType.Primary);

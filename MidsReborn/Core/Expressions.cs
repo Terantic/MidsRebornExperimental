@@ -569,13 +569,14 @@ namespace Mids_Reborn.Core
 
         private static string PowerVectorsContains(IPower? sourcePower, string vector)
         {
-            var ret = Enum.TryParse(typeof(Enums.eVector), vector, out var eValue);
+            if (sourcePower == null || !Enum.TryParse(vector, out Enums.eVector eValue))
+            {
+                return "0";
+            }
 
-            return !ret
+            return (sourcePower.AttackTypes & eValue) == Enums.eVector.None
                 ? "0"
-                : (sourcePower.AttackTypes & (Enums.eVector) eValue) == Enums.eVector.None
-                    ? "0"
-                    : "1";
+                : "1";
         }
 
         private static bool IsPowerActive(string powerName)
@@ -675,7 +676,7 @@ namespace Mids_Reborn.Core
                         return 0;
                     }
 
-                    var baseFx = sourceFx.Clone() as IEffect;
+                    var baseFx = (IEffect) sourceFx.Clone();
                     retValue = InternalParsing(baseFx, exprType, out error);
 
                     break;

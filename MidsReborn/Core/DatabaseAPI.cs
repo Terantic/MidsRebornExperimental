@@ -330,7 +330,7 @@ namespace Mids_Reborn.Core
         {
             //var jsonSerializer = new JsonSerializer();
 
-            Form prg = (Form)Control.FromHandle(frmProgressHandle);
+            var prg = (Form?)Control.FromHandle(frmProgressHandle);
             if (prg == null)
             {
                 SaveJsonDatabase(serializer, msgOnCompletion);
@@ -1153,7 +1153,10 @@ namespace Mids_Reborn.Core
                     {
                         foreach (var enh in power.Enhancements)
                         {
-                            boosts.Add(Enum.GetName(typeof(Enums.eBoosts), enh));
+                            if (Enum.GetName(typeof(Enums.eBoosts), enh) is { } boostName)
+                            {
+                                boosts.Add(boostName);
+                            }
                         }
 
                         power.BoostsAllowed = boosts.ToArray();

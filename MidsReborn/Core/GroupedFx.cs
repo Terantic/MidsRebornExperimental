@@ -2259,7 +2259,10 @@ namespace Mids_Reborn.Core
                     if (gre.GetStatName(pEnh) == "Slow")
                     {
                         rankedEffect.Name = "Slow";
-                        rankedEffect.Value = InvertStringValue(rankedEffect.Value);
+                        if (rankedEffect.Value != null)
+                        {
+                            rankedEffect.Value = InvertStringValue(rankedEffect.Value);
+                        }
                     }
                     else if ((gre.NumEffects > 1) & gre.IncludedEffects.Select(e => pEnh.Effects[e].EffectType).Any(e => e != pEnh.Effects[gre.IncludedEffects[0]].EffectType))
                     {

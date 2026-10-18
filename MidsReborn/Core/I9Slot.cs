@@ -294,7 +294,7 @@ namespace Mids_Reborn.Core
                             }
 
                             var id = (Enums.eEnhance)sEffect.Enhance.ID;
-                            string str2;
+                            string? str2;
                             if (id == Enums.eEnhance.Mez)
                             {
                                 var subId = (Enums.eMez)sEffect.Enhance.SubID;
