@@ -1019,8 +1019,9 @@ namespace Mids_Reborn
                     continue;
                 }
 
-                // Resync Power.Stacks and PowerEntry.VariableValue
-                if (CurrentBuild?.Powers[hIDX] != null && CurrentBuild?.Powers[hIDX].Power != null && CurrentBuild.Powers[hIDX].Power.Stacks < CurrentBuild?.Powers[hIDX]?.VariableValue)
+                // Resync Power.Stacks to PowerEntry.VariableValue, both ways: the database power is shared, so it can hold
+                // a higher value from an earlier build
+                if (CurrentBuild?.Powers[hIDX] != null && CurrentBuild?.Powers[hIDX].Power != null && CurrentBuild.Powers[hIDX].Power.Stacks != CurrentBuild?.Powers[hIDX]?.VariableValue)
                 {
                     CurrentBuild.Powers[hIDX].Power.Stacks = CurrentBuild.Powers[hIDX].VariableValue;
                 }

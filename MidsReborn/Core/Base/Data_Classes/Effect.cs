@@ -1755,11 +1755,7 @@ namespace Mids_Reborn.Core.Base.Data_Classes
                 case "Stacks":
                     if (conditionPower != null)
                     {
-                        var pe = MidsContext.Character?.CurrentBuild?.Powers
-                            .DefaultIfEmpty(null)
-                            .FirstOrDefault(e => e?.Power?.StaticIndex == conditionPower.StaticIndex);
-
-                        var stacks = Math.Max(conditionPower.Stacks, pe?.VariableValue ?? 0);
+                        var stacks = BooleanExprPreprocessor.GetConditionStacks(conditionPower);
                         var cStacks = Convert.ToInt32(cVal[1]);
 
                         cVp.Validated = cVal[0] switch
