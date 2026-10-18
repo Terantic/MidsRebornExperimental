@@ -178,7 +178,7 @@ namespace Mids_Reborn.UI.Forms
                         ProcessedFromCommand = true;
 
                         break;
-                    case var fileLoad when (CommandArgs[0].Contains(".mxd") || CommandArgs[0].Contains(".mbd")) &&
+                    case var fileLoad when (CommandArgs[0].Contains(".mxd", StringComparison.OrdinalIgnoreCase) || CommandArgs[0].Contains(".mbd", StringComparison.OrdinalIgnoreCase)) &&
                                            !CommandArgs[0].Contains("mrb://"):
                         ProcessedFromCommand = false;
                         MidsContext.Config.LastFileName = fileLoad;
@@ -210,10 +210,10 @@ namespace Mids_Reborn.UI.Forms
             {
                 switch (MidsContext.Config.LastFileName)
                 {
-                    case var legacyBuild when MidsContext.Config.LastFileName.EndsWith(".mxd"):
+                    case var legacyBuild when MidsContext.Config.LastFileName.EndsWith(".mxd", StringComparison.OrdinalIgnoreCase):
                         toonLoaded = DoOpen(legacyBuild);
                         break;
-                    case var build when MidsContext.Config.LastFileName.EndsWith(".mbd"):
+                    case var build when MidsContext.Config.LastFileName.EndsWith(".mbd", StringComparison.OrdinalIgnoreCase):
                         toonLoaded = LoadCharacterFile(build);
                         break;
                 }
@@ -1171,7 +1171,8 @@ namespace Mids_Reborn.UI.Forms
 
         private void command_New()
         {
-            if (MainModule.MidsController.Toon.Locked & FileModified)
+            // File New starts a fresh document, so an unlocked build's description is discarded too
+            if ((MainModule.MidsController.Toon.Locked || !string.IsNullOrEmpty(MidsContext.Character?.Comment)) & FileModified)
             {
                 FloatTop(false);
                 var msgBoxResult = MessageBox.Show(@"Current character data will be discarded, are you sure?", @"Question", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
@@ -1183,7 +1184,7 @@ namespace Mids_Reborn.UI.Forms
             }
 
             DataViewLocked = false;
-            NewToon(false);
+            NewToon(false, keepComment: false);
             MidsContext.EnhCheckMode = false;
             if (fRecipe is { Visible: true })
             {
@@ -1199,11 +1200,11 @@ namespace Mids_Reborn.UI.Forms
             LastFileName = "";
             if (!string.IsNullOrWhiteSpace(MidsContext.Config.ActiveTemplate) && File.Exists(MidsContext.Config.ActiveTemplate))
             {
-                if (MidsContext.Config.ActiveTemplate.EndsWith(".mxd"))
+                if (MidsContext.Config.ActiveTemplate.EndsWith(".mxd", StringComparison.OrdinalIgnoreCase))
                 {
                     DoOpen(MidsContext.Config.ActiveTemplate, true);
                 }
-                else if (MidsContext.Config.ActiveTemplate.EndsWith(".mbd"))
+                else if (MidsContext.Config.ActiveTemplate.EndsWith(".mbd", StringComparison.OrdinalIgnoreCase))
                 {
                     LoadCharacterFile(MidsContext.Config.ActiveTemplate, true);
                 }
@@ -1516,32 +1517,71 @@ namespace Mids_Reborn.UI.Forms
                 return false;
             }
 
-            DataViewLocked = false;
-            NewToon(true, true);
-            Stream? mStream = null;
-            if (fName.Trim(' ', '"').EndsWith(".txt"))
+            var loaded = true;
+            var modified = FileModified;
+            if (fName.Trim(' ', '"').EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
             {
+                DataViewLocked = false;
+                NewToon(true, true);
                 GameImport(fName);
             }
-            else if (MainModule.MidsController.Toon != null && !MainModule.MidsController.Toon.Load(fName, ref mStream))
+            else
             {
-                NewToon();
-                if (!asTemplate)
+                // The legacy reader writes straight into the character, so it runs through the build manager,
+                // which puts the current build back if the file can't be read
+                var replaced = false;
+                loaded = MainModule.MidsController.Toon != null && _buildManager.LoadLegacy(() =>
                 {
-                    LastFileName = "";
-                    MidsContext.Config.LastFileName = "";
+                    Stream? mStream = null;
+                    try
+                    {
+                        return MainModule.MidsController.Toon.Load(fName, ref mStream);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Unable to load {fName}\r\n\r\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return false;
+                    }
+                    finally
+                    {
+                        mStream?.Close();
+                    }
+                }, () =>
+                {
+                    DataViewLocked = false;
+                    NewToon(true, true);
+                    replaced = true;
+                    return true;
+                });
+
+                if (loaded)
+                {
+                    if (!asTemplate)
+                    {
+                        LastFileName = fName;
+                        if (!fName.EndsWith("mids_build.mxd", StringComparison.OrdinalIgnoreCase))
+                        {
+                            MidsContext.Config.LastFileName = fName;
+                        }
+                    }
                 }
-            }
-            else if (!asTemplate)
-            {
-                LastFileName = fName;
-                if (!fName.EndsWith("mids_build.mxd"))
+                else
                 {
-                    MidsContext.Config.LastFileName = fName;
+                    if (!asTemplate && MidsContext.Config.LastFileName == fName)
+                    {
+                        // Unreadable file, don't try it again on next start
+                        MidsContext.Config.LastFileName = string.Empty;
+                    }
+
+                    // If the build was cleared before the load failed, the build manager put it back: show it again below
+                    if (!replaced)
+                    {
+                        return false;
+                    }
                 }
             }
 
-            FileModified = false;
+            FileModified = !loaded && modified;
             if (drawing != null)
             {
                 drawing.Highlight = -1;
@@ -1558,7 +1598,7 @@ namespace Mids_Reborn.UI.Forms
             UpdateColors();
             FloatUpdate(true);
 
-            return true;
+            return loaded;
         }
 
         private bool DoLoad(Stream? data)
@@ -3601,7 +3641,7 @@ The default position/state will be used upon next launch.", @"Window State Warni
             DoRedraw();
         }
 
-        private void NewToon(bool init = true, bool skipDraw = false)
+        private void NewToon(bool init = true, bool skipDraw = false, bool keepComment = true)
         {
             // A new or replaced build isn't the previously shared one; a shared-build load sets its id again afterwards
             _buildManager.ClearShareId();
@@ -3618,7 +3658,7 @@ The default position/state will be used upon next launch.", @"Window State Warni
                 else
                 {
                     var str = !MainModule.MidsController.Toon.Locked ? MidsContext.Character.Name : string.Empty;
-                    var comment = !MainModule.MidsController.Toon.Locked ? MidsContext.Character.Comment : string.Empty;
+                    var comment = keepComment && !MainModule.MidsController.Toon.Locked ? MidsContext.Character.Comment : string.Empty;
                     MidsContext.Character.Reset((Archetype)cbAT.SelectedItem, cbOrigin.SelectedIndex);
                     if (MidsContext.Character.Powersets[0].nIDLinkSecondary > -1)
                     {
@@ -6382,8 +6422,17 @@ The default position/state will be used upon next launch.", @"Window State Warni
             }
             else
             {
+                var name = MidsContext.Character.Name;
+                var comment = MidsContext.Character.Comment;
                 using var fe = new ShareMenu(_buildManager);
                 fe.ShowDialog(this);
+
+                // The share menu can edit the build's name and description
+                if (MidsContext.Character.Name != name || MidsContext.Character.Comment != comment)
+                {
+                    FileModified = true;
+                    if (MidsContext.Character.Name != name) txtName.Text = MidsContext.Character.Name;
+                }
             }
         }
 
@@ -6574,20 +6623,20 @@ The default position/state will be used upon next launch.", @"Window State Warni
 
             switch (DlgOpen.FileName)
             {
-                case var legacyBuild when DlgOpen.FileName.EndsWith(".mxd"):
+                case var legacyBuild when DlgOpen.FileName.EndsWith(".mxd", StringComparison.OrdinalIgnoreCase):
                     DoOpen(legacyBuild);
                     break;
 
-                case var newBuild when DlgOpen.FileName.EndsWith(".mbd"):
+                case var newBuild when DlgOpen.FileName.EndsWith(".mbd", StringComparison.OrdinalIgnoreCase):
                     LoadCharacterFile(newBuild);
                     break;
 
+                case var gameBuild when DlgOpen.FileName.EndsWith(".txt", StringComparison.OrdinalIgnoreCase):
+                    DoOpen(gameBuild);
+                    break;
+
                 default:
-                    if (DlgOpen.FileName.EndsWith(".txt"))
-                    {
-                        DoOpen(DlgOpen.FileName);
-                    }
-                    
+                    MessageBox.Show($"Unsupported build file type: {Path.GetFileName(DlgOpen.FileName)}", "Open Build", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     break;
             }
             FloatTop(true);
@@ -6950,8 +6999,12 @@ The default position/state will be used upon next launch.", @"Window State Warni
                 return;
             }
 
+            var comment = MidsContext.Character?.Comment;
             using var editor = new frmEditComment();
-            editor.ShowDialog(this);
+            if (editor.ShowDialog(this) == DialogResult.OK && MidsContext.Character?.Comment != comment)
+            {
+                FileModified = true;
+            }
         }
 
         private void tsViewBuildComment_MouseEnter(object sender, EventArgs e)
@@ -7142,7 +7195,12 @@ The default position/state will be used upon next launch.", @"Window State Warni
         {
             if (NoUpdate)
                 return;
-            if (MidsContext.Character != null) MidsContext.Character.Name = txtName.Text;
+            if (MidsContext.Character != null && (MidsContext.Character.Name ?? string.Empty) != txtName.Text)
+            {
+                MidsContext.Character.Name = txtName.Text;
+                FileModified = true;
+            }
+
             if (fTotals2 != null) frmTotalsV2.SetTitle(fTotals2);
             DisplayName();
         }
