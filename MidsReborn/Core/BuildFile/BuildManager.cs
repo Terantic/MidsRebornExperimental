@@ -133,6 +133,21 @@ namespace Mids_Reborn.Core.BuildFile
             return false;
         }
 
+        /// <summary>
+        /// Runs a legacy loader that reads straight into the character, with the same confirm and rollback as LoadFromFile.
+        /// </summary>
+        public bool LoadLegacy(Func<bool> load, Func<bool>? beforeLoad = null)
+        {
+            if (!ReplaceBuild(beforeLoad, load))
+            {
+                return false;
+            }
+
+            // Legacy data has no share id
+            ClearShareId();
+            return true;
+        }
+
         private static CharacterBuildData? SnapshotBuild()
         {
             if (MidsContext.Character?.Archetype == null || MidsContext.Character.CurrentBuild == null) return null;

@@ -56,6 +56,20 @@ namespace Mids_Reborn.Core
         }
 
         /// <summary>
+        /// Stack count a Stacks conditional compares against: the current build's entry for the power when it has one,
+        /// since the shared database power keeps whatever value an earlier build or UI change gave it.
+        /// </summary>
+        /// <param name="conditionPower">Power named by the conditional</param>
+        /// <returns>Stack count</returns>
+        public static int GetConditionStacks(IPower conditionPower)
+        {
+            var pe = MidsContext.Character?.CurrentBuild?.Powers
+                .FirstOrDefault(e => e?.Power != null && e.Power.StaticIndex == conditionPower.StaticIndex);
+
+            return pe?.VariableValue ?? conditionPower.Stacks;
+        }
+
+        /// <summary>
         /// Validate a single Config conditional against the combat context settings
         /// </summary>
         /// <param name="settingName">Config field name, e.g. cfg.PlayerSettings.hppercent or cfg.player.isalive</param>
@@ -153,9 +167,9 @@ namespace Mids_Reborn.Core
                 {
                     conditionResults.Add(cVal[0] switch
                     {
-                        "=" => conditionPower.Stacks.Equals(Convert.ToInt32(cVal[1])),
-                        ">" => conditionPower.Stacks > Convert.ToInt32(cVal[1]),
-                        "<" => conditionPower.Stacks < Convert.ToInt32(cVal[1]),
+                        "=" => GetConditionStacks(conditionPower).Equals(Convert.ToInt32(cVal[1])),
+                        ">" => GetConditionStacks(conditionPower) > Convert.ToInt32(cVal[1]),
+                        "<" => GetConditionStacks(conditionPower) < Convert.ToInt32(cVal[1]),
                         _ => true
                     });
                 }
@@ -246,7 +260,7 @@ namespace Mids_Reborn.Core
                     case "Stacks":
                         var stacks = buildPowers
                             .Where(x => x != null && x.Power == conditionPower)
-                            .Select(x => x.Power.Stacks)
+                            .Select(x => x.VariableValue)
                             .ToList();
                         conditionResults.Add(cVal[0] switch
                         {

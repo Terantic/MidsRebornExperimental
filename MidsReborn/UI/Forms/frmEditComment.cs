@@ -41,13 +41,10 @@ namespace Mids_Reborn.UI.Forms
                 var c = MessageBox.Show("Comment has been modified.\r\nIgnore anyway?", "Discard changes",
                     MessageBoxButtons.OKCancel, MessageBoxIcon.Question);
 
-                if (c == DialogResult.OK)
+                // Cancel keeps the editor open with the edited text; OK discards it below
+                if (c != DialogResult.OK)
                 {
-                        MidsContext.Character.Comment = comment;
-                        DialogResult = DialogResult.OK;
-                        Close();
-
-                        return;
+                    return;
                 }
             }
 
