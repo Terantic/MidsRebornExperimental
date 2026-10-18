@@ -126,8 +126,10 @@ namespace Mids_Reborn.UI.Controls
             get => _font;
             set
             {
-                _font = base.Font = value;
-                FontChanged?.Invoke(this, value);
+                // Setting null resets to the parent's font, so keep what the base resolved
+                base.Font = value;
+                _font = base.Font;
+                FontChanged?.Invoke(this, _font);
             }
         }
 

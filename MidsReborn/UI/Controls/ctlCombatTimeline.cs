@@ -1020,7 +1020,7 @@ namespace Mids_Reborn.UI.Controls
                     .Where(f => f.PowerSlot.EnhancedPower?.FullName == p)
                     .Select(f => ApplyViewProfile(GroupedFx.AssembleGroupedEffects(f.PowerSlot.EnhancedPower),
                         f.PowerSlot.EnhancedPower, Profile).Count))
-                .Select(p => p.Max())
+                .Select(p => p.DefaultIfEmpty(0).Max())
                 .ToList();
             var powersRows = distinctPowers
                 .Select((p, i) => new KeyValuePair<string, int>(p, i))
@@ -1046,13 +1046,13 @@ namespace Mids_Reborn.UI.Controls
 
             foreach (var p in orderedTimeline)
             {
-                var pIndex = powersRows[p.PowerSlot.EnhancedPower?.FullName];
-                var vOffset = padding + (pIndex == 0 ? 0 : powerHeights.Take(pIndex - 1).Sum()) * lineThickness + interlineHeight * pIndex;
-
                 if (p.PowerSlot.EnhancedPower == null)
                 {
                     continue;
                 }
+
+                var pIndex = powersRows[p.PowerSlot.EnhancedPower.FullName];
+                var vOffset = padding + (pIndex == 0 ? 0 : powerHeights.Take(pIndex - 1).Sum()) * lineThickness + interlineHeight * pIndex;
 
                 var vp = 0f;
 

@@ -139,9 +139,9 @@ namespace Mids_Reborn.Core
             {
                 ColorThemes.Add(theme);
             }
-            internal void RemoveTheme(int index)
+            internal void RemoveTheme(ColorTheme theme)
             {
-                ColorThemes.RemoveAt(index);
+                ColorThemes.Remove(theme);
             }
         }
         public class InfoGraphicConfig

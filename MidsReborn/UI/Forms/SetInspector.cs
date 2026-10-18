@@ -267,6 +267,7 @@ namespace Mids_Reborn.UI.Forms
 
         private void CbEffectType_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (cbEffect.SelectedIndex <= 0) return;
             // Handle cbEffectType selection change
             var selectedEffectType = cbEffect.GetItemText(cbEffect.SelectedItem);
             var selectedValue = cbEffectType.GetItemText(cbEffectType.SelectedItem);

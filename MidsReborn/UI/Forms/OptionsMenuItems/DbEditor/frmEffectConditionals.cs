@@ -207,7 +207,9 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
                         var pType = power?.PowerType;
                         var isType = pType is Enums.ePowerType.Auto_ or Enums.ePowerType.Toggle ||
                                      pType == Enums.ePowerType.Click && power?.ClickBuff == true;
-                        var isUsable = !eArray.Contains((int)pSetType);
+                        // Powers left without a powerset (e.g. after deleting the set) can't be listed
+                        if (pSetType is not { } setType) continue;
+                        var isUsable = !eArray.Contains((int)setType);
                         if (!isUsable || !isType)
                         {
                             continue;
@@ -250,7 +252,8 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
                         var pType = power?.PowerType;
                         var isType = pType == Enums.ePowerType.Auto_ || pType == Enums.ePowerType.Toggle ||
                                      (pType == Enums.ePowerType.Click && power?.ClickBuff == true);
-                        var isUsable = !eArray.Contains((int)pSetType);
+                        if (pSetType is not { } setType) continue;
+                        var isUsable = !eArray.Contains((int)setType);
                         if (!isUsable && !isType)
                         {
                             continue;
@@ -291,7 +294,8 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
                     {
                         var pSetType = power?.GetPowerSet()?.SetType;
                         var isType = power.VariableEnabled;
-                        var isUsable = !eArray.Contains((int)pSetType);
+                        if (pSetType is not { } setType) continue;
+                        var isUsable = !eArray.Contains((int)setType);
                         if (!isUsable || !isType) continue;
 
                         var pItem = new Regex("[_]");
@@ -841,7 +845,7 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
 
         private void tbFilter_TextChanged(object sender, EventArgs e)
         {
-            var conditionalType = lvConditionalType.SelectedIndices.Count < 0
+            var conditionalType = lvConditionalType.SelectedIndices.Count == 0
                 ? ""
                 : lvConditionalType.SelectedItems[0].Text;
 
@@ -860,7 +864,8 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
                         var pType = power?.PowerType;
                         var isType = pType is Enums.ePowerType.Auto_ or Enums.ePowerType.Toggle ||
                                      pType == Enums.ePowerType.Click && power?.ClickBuff == true;
-                        var isUsable = !eArray.Contains((int)pSetType);
+                        if (pSetType is not { } setType) continue;
+                        var isUsable = !eArray.Contains((int)setType);
                         if (!isUsable || !isType)
                         {
                             continue;
@@ -898,7 +903,8 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
                         var pType = power?.PowerType;
                         var isType = pType is Enums.ePowerType.Auto_ or Enums.ePowerType.Toggle ||
                                      pType == Enums.ePowerType.Click && power?.ClickBuff == true;
-                        var isUsable = !eArray.Contains((int)pSetType);
+                        if (pSetType is not { } setType) continue;
+                        var isUsable = !eArray.Contains((int)setType);
                         if (!isUsable && !isType)
                         {
                             continue;
@@ -961,7 +967,8 @@ namespace Mids_Reborn.UI.Forms.OptionsMenuItems.DbEditor
                     {
                         var pSetType = power?.GetPowerSet()?.SetType;
                         var isType = power.VariableEnabled;
-                        var isUsable = !eArray.Contains((int)pSetType);
+                        if (pSetType is not { } setType) continue;
+                        var isUsable = !eArray.Contains((int)setType);
                         if (!isUsable || !isType)
                         {
                             continue;

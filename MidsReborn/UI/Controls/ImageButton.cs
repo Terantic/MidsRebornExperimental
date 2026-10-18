@@ -124,7 +124,7 @@ namespace Mids_Reborn.UI.Controls
             set
             {
                 bxAltImage = new ExtendedBitmap(Width, Height);
-                bxImage.Graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
+                bxAltImage.Graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
                 bxAltImage.Graphics.DrawImage(value, 0, 0, bxAltImage.Size.Width, bxAltImage.Size.Height);
                 Redraw();
             }

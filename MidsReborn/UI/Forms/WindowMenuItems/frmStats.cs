@@ -1692,18 +1692,18 @@ namespace Mids_Reborn.UI.Forms.WindowMenuItems
                 return false;
             }
 
-            var cnt = "";
+            // Validate into a local so a bad file leaves the current comparison in place
+            StatsPowerData? data;
             try
             {
-                cnt = File.ReadAllText(file);
+                data = StatsPowerData.ImportFromJson(File.ReadAllText(file));
             }
             catch (Exception)
             {
                 return false;
             }
 
-            CompareData = StatsPowerData.ImportFromJson(cnt);
-            if (CompareData == null)
+            if (data == null)
             {
                 return false;
             }
@@ -1734,7 +1734,7 @@ namespace Mids_Reborn.UI.Forms.WindowMenuItems
             }*/
 
             // Very basic validation: Archetype has to be set, Powersets has to have 7+ items (even if powers from pools are not taken)
-            if (string.IsNullOrWhiteSpace(CompareData.Metadata.Archetype))
+            if (string.IsNullOrWhiteSpace(data.Metadata.Archetype))
             {
                 var msg = new MessageBoxEx("Import Compare Data", "Cannot import data from file: missing archetype.",
                     MessageBoxEx.MessageBoxExButtons.Ok, MessageBoxEx.MessageBoxExIcon.Error, true);
@@ -1743,7 +1743,7 @@ namespace Mids_Reborn.UI.Forms.WindowMenuItems
                 return false;
             }
 
-            if (CompareData.Metadata.Powersets.Length < 7)
+            if (data.Metadata.Powersets == null || data.Metadata.Powersets.Length < 7)
             {
                 var msg = new MessageBoxEx("Import Compare Data",
                     "Cannot import data from file: too few powersets (expecting at least 7 entries).",
@@ -1753,6 +1753,7 @@ namespace Mids_Reborn.UI.Forms.WindowMenuItems
                 return false;
             }
 
+            CompareData = data;
             CompareMode = true;
 
             return true;
