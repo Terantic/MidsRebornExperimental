@@ -69,49 +69,40 @@ namespace Mids_Reborn.Core
         /// </summary>
         private static readonly string[] DamageVectorsNames = Enum.GetNames<Enums.eDamage>();
         
+        // The vector lists below are what the graph options dialog offers, and what the min/max/average modes summarize.
+        // The other eDamage/eMez slots of the totals arrays aren't real vectors and would drag those down.
+
         /// <summary>
-        /// Unused defense vectors
+        /// Used resistance vectors
         /// </summary>
-        private static readonly int[] ExcludedDefVectors = new[]
-        {
-            Enums.eDamage.None,
-            DatabaseAPI.RealmUsesToxicDef()? Enums.eDamage.None : Enums.eDamage.Toxic,
-            Enums.eDamage.Special,
-            Enums.eDamage.Unique1,
-            Enums.eDamage.Unique2,
-            Enums.eDamage.Unique3
-        }.Cast<int>().ToArray();
-        
+        internal static readonly Enums.eDamage[] ResistanceVectors =
+        [
+            Enums.eDamage.Smashing, Enums.eDamage.Lethal, Enums.eDamage.Fire, Enums.eDamage.Cold,
+            Enums.eDamage.Energy, Enums.eDamage.Negative, Enums.eDamage.Toxic, Enums.eDamage.Psionic
+        ];
+
         /// <summary>
-        /// Unused resistance vectors
+        /// Used defense vectors (Toxic only for realms that use toxic defense)
         /// </summary>
-        private static readonly int[] ExcludedResVectors = new[]
-        {
-            Enums.eDamage.None,
-            Enums.eDamage.Melee,
-            Enums.eDamage.Ranged,
-            Enums.eDamage.AoE,
-            Enums.eDamage.Special,
-            Enums.eDamage.Unique1,
-            Enums.eDamage.Unique2,
-            Enums.eDamage.Unique3
-        }.Cast<int>().ToArray();
-        
+        internal static readonly Enums.eDamage[] DefenseVectors =
+        [
+            .. ResistanceVectors.Where(e => e != Enums.eDamage.Toxic || DatabaseAPI.RealmUsesToxicDef()),
+            Enums.eDamage.Melee, Enums.eDamage.Ranged, Enums.eDamage.AoE
+        ];
+
         /// <summary>
-        /// Unused elusivity vectors
+        /// Used elusivity vectors (None is untyped elusivity)
         /// </summary>
-        private static readonly int[] ExcludedElusivityVectors = new[]
-        {
-            Enums.eDamage.Special,
-            Enums.eDamage.Unique1,
-            Enums.eDamage.Unique2,
-            Enums.eDamage.Unique3
-        }.Cast<int>().ToArray();
+        internal static readonly Enums.eDamage[] ElusivityVectors =
+        [
+            Enums.eDamage.None, .. ResistanceVectors,
+            Enums.eDamage.Melee, Enums.eDamage.Ranged, Enums.eDamage.AoE
+        ];
 
         /// <summary>
         /// Used mez types
         /// </summary>
-        private static readonly Enums.eMez[] MezList =
+        internal static readonly Enums.eMez[] MezList =
         [
             Enums.eMez.Held, Enums.eMez.Stunned, Enums.eMez.Sleep, Enums.eMez.Immobilized,
             Enums.eMez.Knockback, Enums.eMez.Repel, Enums.eMez.Confused, Enums.eMez.Terrorized,
@@ -121,7 +112,7 @@ namespace Mids_Reborn.Core
         /// <summary>
         /// Used debuff types, for debuff resistances
         /// </summary>
-        private static readonly Enums.eEffectType[] DebuffEffectsList =
+        internal static readonly Enums.eEffectType[] DebuffEffectsList =
         [
             Enums.eEffectType.Defense, Enums.eEffectType.Endurance, Enums.eEffectType.Recovery,
             Enums.eEffectType.PerceptionRadius, Enums.eEffectType.ToHit, Enums.eEffectType.RechargeTime,
@@ -320,12 +311,14 @@ namespace Mids_Reborn.Core
                     break;
 
                 case eCustomGraphStat.EnhMez:
+                    // Zero bonuses count too (BoostsMez drops them, and is empty without any)
+                    var mezBoosts = MezList.Select(m => displayStats.BoostsMezRaw[(int)m]).ToArray();
                     val = mode switch
                     {
                         eCustomGraphMode.Single => displayStats.BoostsMez.GetValueOrDefault(cfgSettings.MezType ?? Enums.eMez.Held, 0),
-                        eCustomGraphMode.Min => displayStats.BoostsMez.Values.Min(),
-                        eCustomGraphMode.Average => displayStats.BoostsMez.Values.Average(),
-                        _ => displayStats.BoostsMez.Values.Max(),
+                        eCustomGraphMode.Min => mezBoosts.Min(),
+                        eCustomGraphMode.Average => mezBoosts.Average(),
+                        _ => mezBoosts.Max(),
                     };
 
                     suffix = mode switch
@@ -666,7 +659,8 @@ namespace Mids_Reborn.Core
                         GenericDataTooltip3(displayStats.ThreatLevel, MidsContext.Character.Archetype.BaseThreat * 100, displayStats.ThreatLevel, "Threat"));
                     break;
                 case eCustomGraphStat.StatusProtection:
-                    var mezProtections = MidsContext.Character.Totals.Mez
+                    var mezProtections = MezList
+                        .Select(m => MidsContext.Character.Totals.Mez[(int)m])
                         .Select(e => e > 0 ? 0 : Math.Abs(e))
                         .ToArray();
 
@@ -702,12 +696,16 @@ namespace Mids_Reborn.Core
                     break;
 
                 case eCustomGraphStat.StatusResistance:
+                    var mezResistances = MezList
+                        .Select(m => MidsContext.Character.Totals.MezRes[(int)m])
+                        .ToArray();
+
                     val = mode switch
                     {
-                        eCustomGraphMode.Single => MidsContext.Character.Totals.MezRes[cfgSettings.MezType != null ? mezIndex : 0],
-                        eCustomGraphMode.Min => MidsContext.Character.Totals.MezRes.Min(),
-                        eCustomGraphMode.Average => MidsContext.Character.Totals.MezRes.Average(),
-                        _ => MidsContext.Character.Totals.MezRes.Max(),
+                        eCustomGraphMode.Single => mezResistances[cfgSettings.MezType != null ? mezIndex : 0],
+                        eCustomGraphMode.Min => mezResistances.Min(),
+                        eCustomGraphMode.Average => mezResistances.Average(),
+                        _ => mezResistances.Max(),
                     };
 
                     mezLabel = mode switch
@@ -784,12 +782,16 @@ namespace Mids_Reborn.Core
                     break;
 
                 case eCustomGraphStat.Elusivity:
+                    var elusivity = ElusivityVectors
+                        .Select(d => MidsContext.Character.Totals.Elusivity[(int)d])
+                        .ToArray();
+
                     val = mode switch
                     {
                         eCustomGraphMode.Single => cfgSettings.DamageType != null ? MidsContext.Character.Totals.Elusivity[(int)cfgSettings.DamageType] : MidsContext.Character.Totals.Elusivity[0],
-                        eCustomGraphMode.Min => MidsContext.Character.Totals.Elusivity.Min(),
-                        eCustomGraphMode.Average => MidsContext.Character.Totals.Elusivity.Average(),
-                        _ => MidsContext.Character.Totals.Elusivity.Max()
+                        eCustomGraphMode.Min => elusivity.Min(),
+                        eCustomGraphMode.Average => elusivity.Average(),
+                        _ => elusivity.Max()
                     };
 
                     val = (val + (MidsContext.Config.Inc.DisablePvE ? 0.4f : 0)) * 100;

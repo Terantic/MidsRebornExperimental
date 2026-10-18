@@ -57,12 +57,8 @@ namespace Mids_Reborn.Core.BuildFile
                 return new LoadFileResult { BuildData = null, ErrorMsg = "Unable to load build from file." };
             }
 
-            var metaData = buildData.BuiltWith;
-            if (metaData == null)
-            {
-                return new LoadFileResult { BuildData = null, ErrorMsg = "Unable to read metadata." };
-            }
-
+            // Checked by Deserialize
+            var metaData = buildData.BuiltWith!;
             if (DatabaseAPI.DatabaseName != metaData.Database)
             {
                 return new LoadFileResult { BuildData = null, ErrorMsg = $"This build has been made with {metaData.Database} and doesn't match current database ({DatabaseAPI.DatabaseName})." };
@@ -78,7 +74,14 @@ namespace Mids_Reborn.Core.BuildFile
                 Converters = new List<JsonConverter> { new EnhancementDataConverter() }
             };
 
-            return JsonConvert.DeserializeObject<CharacterBuildData>(data, settings) ?? throw new InvalidOperationException("No build data found.");
+            var buildData = JsonConvert.DeserializeObject<CharacterBuildData>(data, settings) ?? throw new InvalidOperationException("No build data found.");
+            // The loaders pick the database and compare its version from these
+            if (string.IsNullOrWhiteSpace(buildData.BuiltWith?.Database) || buildData.BuiltWith.DatabaseVersion == null)
+            {
+                throw new InvalidDataException("Missing build metadata.");
+            }
+
+            return buildData;
         }
 
         /// <summary>
@@ -93,14 +96,56 @@ namespace Mids_Reborn.Core.BuildFile
                 return false;
             }
 
-            if (beforeLoad != null && !beforeLoad())
+            if (!ReplaceBuild(beforeLoad, buildData.LoadBuild))
             {
                 return false;
             }
 
             BuildData = buildData;
             BuildData.Id = id;
-            return BuildData.LoadBuild();
+            return true;
+        }
+
+        /// <summary>
+        /// Lets the caller confirm and clear the active build (beforeLoad), then runs load.
+        /// If load still fails, the previous build and its share id are put back.
+        /// </summary>
+        private bool ReplaceBuild(Func<bool>? beforeLoad, Func<bool> load)
+        {
+            var previous = SnapshotBuild();
+            var previousId = BuildData?.Id;
+            if (beforeLoad != null && !beforeLoad())
+            {
+                return false;
+            }
+
+            if (load())
+            {
+                return true;
+            }
+
+            if (previous == null || !previous.LoadBuild())
+            {
+                MidsContext.Character?.Reset();
+            }
+
+            if (BuildData != null) BuildData.Id = previousId;
+            return false;
+        }
+
+        private static CharacterBuildData? SnapshotBuild()
+        {
+            if (MidsContext.Character?.Archetype == null || MidsContext.Character.CurrentBuild == null) return null;
+            try
+            {
+                var snapshot = new CharacterBuildData();
+                snapshot.Update(MidsContext.Character);
+                return snapshot;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -126,13 +171,8 @@ namespace Mids_Reborn.Core.BuildFile
                 return false;
             }
 
-            var metaData = buildData.BuiltWith;
-            if (metaData == null)
-            {
-                _notifier.ShowError($"Cannot load {fileName} - error reading build metadata.\r\n\r\n{nameof(metaData)}");
-                return false;
-            }
-
+            // Checked by Deserialize
+            var metaData = buildData.BuiltWith!;
             var fileInfo = new FileInfo(fileName);
             if (DatabaseAPI.DatabaseName != metaData.Database)
             {
@@ -235,8 +275,17 @@ namespace Mids_Reborn.Core.BuildFile
                 return false;
             }
 
-            BuildData?.Update(MidsContext.Character);
-            File.WriteAllText(fileName, JsonConvert.SerializeObject(BuildData, Formatting.Indented));
+            try
+            {
+                BuildData?.Update(MidsContext.Character);
+                FileIO.WriteAllTextAtomic(fileName, JsonConvert.SerializeObject(BuildData, Formatting.Indented));
+            }
+            catch (Exception ex)
+            {
+                _notifier.ShowError($"Unable to save build to {fileName}.\r\n\r\n{ex.Message}");
+                return false;
+            }
+
             return true;
         }
 
@@ -265,13 +314,8 @@ namespace Mids_Reborn.Core.BuildFile
                 return false;
             }
 
-            var metaData = buildData.BuiltWith;
-            if (metaData == null)
-            {
-                _notifier.ShowError($"Cannot load share data - An error occurred during reading build metadata.\r\n\r\n{nameof(metaData)}");
-                return false;
-            }
-
+            // Checked by Deserialize
+            var metaData = buildData.BuiltWith!;
             if (DatabaseAPI.DatabaseName != metaData.Database)
             {
                 var databases = Directory.EnumerateDirectories(Path.Combine(AppContext.BaseDirectory, AppDataPaths.RoamingFolder)).ToList();
@@ -396,16 +440,22 @@ namespace Mids_Reborn.Core.BuildFile
                         return false;
                     }
 
-                    if (beforeLoad != null && !beforeLoad())
+                    // Read the payload once without touching the character, so a bad one is rejected before the active build is cleared
+                    if (MidsCharacterFileFormat.MxDReadSaveDataLight(ref decodedBytes) == null)
+                    {
+                        _notifier.ShowError("Unable to read build data.");
+                        return false;
+                    }
+
+                    // Now use the decompressed bytes with the MxDReadSaveData method
+                    if (!ReplaceBuild(beforeLoad, () => MidsCharacterFileFormat.MxDReadSaveData(ref decodedBytes, false)))
                     {
                         return false;
                     }
 
                     // Legacy data is read straight into the character, it has no share id
                     ClearShareId();
-                    // Now use the decompressed bytes with the MxDReadSaveData method
-                    var loadSuccess = MidsCharacterFileFormat.MxDReadSaveData(ref decodedBytes, false);
-                    return loadSuccess;
+                    return true;
 
                 case DataClassifier.DataType.Mbd:
                     // Process as Base64

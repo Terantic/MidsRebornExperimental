@@ -16,6 +16,10 @@ public sealed class BackupManager : IBackupManager
     /// </summary>
     public const string ApplicationBackupName = "Application";
 
+    // An application restore requires this in the backup: an older bootstrapper could write a database
+    // backup under the application backup's name, and restoring that would wipe the installation.
+    private const string ApplicationMarkerFile = "MidsReborn.exe";
+
     // Top-level prefixes left alone by application backup/restore (prefix match, so "Data" also covers "Databases")
     private static readonly string[] ExcludedApplicationPrefixes = ["Logs", "Staging", "Backup", "Data", "Patches"];
 
@@ -87,29 +91,26 @@ public sealed class BackupManager : IBackupManager
                 return false;
             }
 
-            string bakPath = Path.ChangeExtension(backupPath, ".mrbak");
-
-            // Remove old backup if it exists
-            if (File.Exists(bakPath))
-            {
-                try
-                {
-                    File.Delete(bakPath);
-                    _logger.LogInformation("Previous backup deleted: {Path}", bakPath);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to delete old backup: {Path}", bakPath);
-                }
-            }
+            string bakPath = GetArchivePath(backupPath);
+            string tempPath = bakPath + ".tmp";
 
             Directory.CreateDirectory(Path.GetDirectoryName(bakPath)!);
 
-            bool ok = await _compressor.CompressAsync(entries, bakPath, cancellationToken);
-            if (!ok)
+            // The previous backup is only replaced once the new one is complete
+            try
             {
-                _logger.LogError("Failed to write compressed backup to {Path}", bakPath);
-                return false;
+                bool ok = await _compressor.CompressAsync(entries, tempPath, cancellationToken);
+                if (!ok)
+                {
+                    _logger.LogError("Failed to write compressed backup to {Path}", tempPath);
+                    return false;
+                }
+
+                File.Move(tempPath, bakPath, overwrite: true);
+            }
+            finally
+            {
+                TryDeleteFile(tempPath);
             }
 
             _logger.LogInformation("Compressed backup created at {Path}", bakPath);
@@ -127,9 +128,9 @@ public sealed class BackupManager : IBackupManager
         }
     }
 
-    public async Task<bool> RestoreBackupAsync(string installPath, string backupPath, string patchType, string name, CancellationToken cancellationToken)
+    public async Task<bool> RestoreBackupAsync(string installPath, string backupPath, string patchType, string name, CancellationToken cancellationToken, Action? onDestructivePhase = null)
     {
-        string bakFile = Path.ChangeExtension(backupPath, ".mrbak");
+        string bakFile = GetArchivePath(backupPath);
         string scratchPath = backupPath + ".restoring";
         bool isApplication = patchType.Equals("Application", StringComparison.OrdinalIgnoreCase);
 
@@ -184,6 +185,12 @@ public sealed class BackupManager : IBackupManager
                 return false;
             }
 
+            if (isApplication && !toRestore.Any(r => r.RelativePath.Equals(ApplicationMarkerFile, StringComparison.OrdinalIgnoreCase)))
+            {
+                _logger.LogError("Backup does not contain the application ({File}): {Path}", ApplicationMarkerFile, bakFile);
+                return false;
+            }
+
             // Phase 2: write the restored files to a scratch folder first, so a write failure
             // (disk full, permissions) is discovered before the installation is touched.
             TryDeleteDirectory(scratchPath);
@@ -201,7 +208,9 @@ public sealed class BackupManager : IBackupManager
                 await File.WriteAllBytesAsync(scratchFile, file.Data, cancellationToken);
             }
 
-            // From here on the restore is destructive and is never cancelled part-way.
+            // Last cancellation point: from here on the restore is destructive and is never cancelled part-way.
+            cancellationToken.ThrowIfCancellationRequested();
+            onDestructivePhase?.Invoke();
 
             // Phase 3: clean existing install path
             if (isApplication)
@@ -215,7 +224,7 @@ public sealed class BackupManager : IBackupManager
                     try { File.Delete(file); }
                     catch (Exception ex)
                     {
-                        // The restored copy overwrites it below where possible
+                        // The restored copy overwrites it below where possible; anything else is caught in phase 5
                         _logger.LogWarning(ex, "Failed to delete {Path} before restore", file);
                     }
                 }
@@ -252,6 +261,22 @@ public sealed class BackupManager : IBackupManager
                 {
                     complete = false;
                     _logger.LogError(ex, "Failed to restore {Path}", targetFile);
+                }
+            }
+
+            // Phase 5: verify only the restored files remain (excluded application paths are left alone on purpose),
+            // so a newer file that could not be deleted is not mistaken for a complete restore.
+            var restored = new HashSet<string>(toRestore.Select(r => r.RelativePath), StringComparer.OrdinalIgnoreCase);
+            if (Directory.Exists(installPath))
+            {
+                foreach (string file in Directory.EnumerateFiles(installPath, "*", SearchOption.AllDirectories))
+                {
+                    string rel = Path.GetRelativePath(installPath, file);
+                    if (restored.Contains(rel) || (isApplication && IsExcludedFromApplicationBackup(rel)))
+                        continue;
+
+                    complete = false;
+                    _logger.LogError("File not in the backup could not be removed: {Path}", file);
                 }
             }
 
@@ -295,10 +320,19 @@ public sealed class BackupManager : IBackupManager
     /// <summary>
     /// Resolves the backup path (without the .mrbak extension) for an update entry or rollback target.
     /// Application backups always use <see cref="ApplicationBackupName"/>, whatever display name the entry carries.
+    /// Database backups live in Backup/Databases, so no database name can share the application backup.
+    /// Backups an older bootstrapper wrote for a database (Backup/&lt;name&gt;.mrbak) are no longer read.
     /// </summary>
     public static string GetBackupPath(string baseDir, string patchType, string name) =>
-        Path.Combine(baseDir, "Backup",
-            patchType.Equals("Application", StringComparison.OrdinalIgnoreCase) ? ApplicationBackupName : name);
+        patchType.Equals("Application", StringComparison.OrdinalIgnoreCase)
+            ? Path.Combine(baseDir, "Backup", ApplicationBackupName)
+            : Path.Combine(baseDir, "Backup", "Databases", name);
+
+    /// <summary>
+    /// The archive file for a <see cref="GetBackupPath"/> result. The extension is appended, never substituted,
+    /// so dotted database names stay distinct.
+    /// </summary>
+    public static string GetArchivePath(string backupPath) => backupPath + ".mrbak";
 
     private static bool IsExcludedFromApplicationBackup(string relativePath) =>
         BootstrapperFiles.Contains(relativePath) ||
@@ -310,6 +344,19 @@ public sealed class BackupManager : IBackupManager
         {
             if (Directory.Exists(path))
                 Directory.Delete(path, recursive: true);
+        }
+        catch
+        {
+            // Best-effort cleanup
+        }
+    }
+
+    private static void TryDeleteFile(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+                File.Delete(path);
         }
         catch
         {

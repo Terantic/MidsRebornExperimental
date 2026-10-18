@@ -48,10 +48,10 @@ public sealed class RestoreFlowManager : IRestoreFlowManager
                 : Path.Combine(baseDir, "Databases", name);
 
             string backupPath = BackupManager.GetBackupPath(baseDir, patchType, name);
-            if (isApplication && !File.Exists(Path.ChangeExtension(backupPath, ".mrbak")))
+            if (isApplication && !File.Exists(BackupManager.GetArchivePath(backupPath)))
             {
                 string legacyPath = Path.Combine(baseDir, "Backup", LegacyApplicationBackupName);
-                if (File.Exists(Path.ChangeExtension(legacyPath, ".mrbak")))
+                if (File.Exists(BackupManager.GetArchivePath(legacyPath)))
                 {
                     _logger.LogInformation("Using legacy application backup: {Path}", legacyPath);
                     backupPath = legacyPath;
@@ -78,24 +78,29 @@ public sealed class RestoreFlowManager : IRestoreFlowManager
                     }
                 }
 
-                // Last cancellation point: the restore itself always runs to completion
                 cancellationToken.ThrowIfCancellationRequested();
-                _ui.DisableCancel();
             }
             catch (OperationCanceledException)
             {
-                _logger.LogWarning("Restore cancelled by user for {Name}", name);
-                _ui.TriggerCancel();
-                await _ui.ShowStatusAsync("Restore cancelled.", 1000, false, CancellationToken.None);
-                return -1;
+                return await CancelledAsync(name);
             }
 
             _ui.TriggerRollback();
             await _ui.ShowStatusAsync("Rolling back...", 500, true, CancellationToken.None);
             _ui.UpdateProgress(0f);
 
+            // Reading and validating the backup can still be cancelled; once the restore starts
+            // changing the installation it always runs to completion
+            bool destructive = false;
             bool restored = await _pipeline.RunStepAsync("Restore backup", () =>
-                _backupManager.RestoreBackupAsync(installPath, backupPath, patchType, name, CancellationToken.None));
+                _backupManager.RestoreBackupAsync(installPath, backupPath, patchType, name, cancellationToken, () =>
+                {
+                    destructive = true;
+                    _ui.DisableCancel();
+                }));
+
+            if (!restored && !destructive && cancellationToken.IsCancellationRequested)
+                return await CancelledAsync(name);
 
             if (restored)
             {
@@ -113,5 +118,13 @@ public sealed class RestoreFlowManager : IRestoreFlowManager
 
             return restored ? 0 : -1;
         }
+    }
+
+    private async Task<int> CancelledAsync(string name)
+    {
+        _logger.LogWarning("Restore cancelled by user for {Name}", name);
+        _ui.TriggerCancel();
+        await _ui.ShowStatusAsync("Restore cancelled.", 1000, false, CancellationToken.None);
+        return -1;
     }
 }

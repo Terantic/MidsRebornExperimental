@@ -66,7 +66,8 @@ namespace Mids_Reborn.Core
 
             foreach (var tag in tagNames)
             {
-                var r = new Regex($@"\<{tag}\>(.+)\<\/{tag}\>");
+                // Values can span lines (multiline comments)
+                var r = new Regex($@"\<{tag}\>(.*?)\<\/{tag}\>", RegexOptions.Singleline);
                 if (!r.IsMatch(s))
                 {
                     continue;
@@ -467,6 +468,19 @@ namespace Mids_Reborn.Core
                     };
 
                     names.Add(iName);
+                }
+
+                // Character.Powersets is a fixed layout (primary, secondary, inherent, 4 pools, epic)
+                if (names.Count != 8)
+                {
+                    if (!silent)
+                    {
+                        MessageBox.Show("Unable to read data - Invalid powerset list.", "ReadSaveData Failed");
+                    }
+
+                    r.Close();
+                    memoryStream.Close();
+                    return false;
                 }
 
                 var errors = MidsContext.Character.LoadPowersetsByName(names);
@@ -892,6 +906,19 @@ namespace Mids_Reborn.Core
                     names.Add(iName);
                 }
 
+                // Same layout check as the full reader
+                if (names.Count != 8)
+                {
+                    if (!silent)
+                    {
+                        MessageBox.Show("Unable to read data - Invalid powerset list.", "ReadSaveData Failed");
+                    }
+
+                    r.Close();
+                    memoryStream.Close();
+                    return null;
+                }
+
                 /*var errors = MidsContext.Character.LoadPowersetsByName(names);
                 foreach (var (i, n) in errors)
                 {
@@ -927,10 +954,8 @@ namespace Mids_Reborn.Core
                             nId = DatabaseAPI.NidFromStaticIndexPower(sidPower1);
                         }
 
-                        var flag5 = false;
                         PowerEntry? powerEntry1;
                         powerEntry1 = new PowerEntry();
-                        flag5 = true;
 
                         if (powerEntry1 == null)
                         {
@@ -1087,16 +1112,8 @@ namespace Mids_Reborn.Core
                             }
                         }
 
-                        var ps = powerEntry1.Power?.GetPowerSet();
-
-                        if (flag5)
-                        {
-                            if (powerEntry1.Power != null && powerEntry1.Power.InherentType != Enums.eGridType.None)
-                            {
-                                ret.Add(powerEntry1);
-                            }
-                        }
-                        else if (powerEntry1.Power != null && (ps is { nArchetype: > -1 } || powerEntry1.Power.GroupName == "Pool"))
+                        // Every decoded power, main ones included, so callers can check the whole build
+                        if (powerEntry1.Power != null)
                         {
                             ret.Add(powerEntry1);
                         }
@@ -1162,83 +1179,14 @@ namespace Mids_Reborn.Core
                 return eLoadReturnCode.Failure;
             }
 
-            var lines = data.Split('\n');
-            string[] headers = { "ABCD", "0", "0", "0" };
-            var header = "";
-            var dataIndex = FindDataIndex();
-
-            if (dataIndex < 0)
+            var bytes = ExtractDataChunk(data, out var error);
+            if (bytes == null)
             {
-                MessageBox.Show("Unable to locate data header - Magic Number not found!", "ExtractAndLoad Failed");
+                MessageBox.Show(error, "ExtractAndLoad Failed");
                 return eLoadReturnCode.Failure;
-            }
-
-            if (lines.Length <= dataIndex + 1)
-            {
-                MessageBox.Show("Unable to locate data - Nothing beyond header!", "ExtractAndLoad Failed");
-                return eLoadReturnCode.Failure;
-            }
-
-            var payload = string.Join("\n", lines[(dataIndex + 1)..]);
-            var isHex = headers.Length > 4 && string.Equals(headers[4], "HEX", StringComparison.OrdinalIgnoreCase);
-            var bytes =
-                new ASCIIEncoding().GetBytes(isHex
-                    ? ModernZlib.UnbreakHex(payload)
-                    : ModernZlib.UnbreakString(payload, true));
-
-            if (bytes.Length < Convert.ToInt32(headers[3]))
-            {
-                MessageBox.Show("Data chunk was incomplete! Check that the entire chunk was copied to the clipboard.",
-                    "ExtractAndLoad Failed");
-                return eLoadReturnCode.Failure;
-            }
-
-            if (bytes.Length > Convert.ToInt32(headers[3]))
-            {
-                Array.Resize(ref bytes, Convert.ToInt32(headers[3]));
-            }
-
-            bytes = isHex ? ModernZlib.HexDecodeBytes(bytes) : ModernZlib.UuDecodeBytes(bytes);
-
-            if (bytes.Length == 0)
-            {
-                return eLoadReturnCode.Failure;
-            }
-
-            if (header == MagicCompressed)
-            {
-                try
-                {
-                    bytes = ModernZlib.DecompressChunk(bytes, Convert.ToInt32(headers[1]));
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Unable to decompress data - {ex.Message}", "ExtractAndLoad Failed");
-                    return eLoadReturnCode.Failure;
-                }
             }
 
             return MxDReadSaveData(ref bytes, false) ? eLoadReturnCode.Success : eLoadReturnCode.Failure;
-
-            // Local function to find the data index
-            int FindDataIndex()
-            {
-                for (var index = 0; index < lines.Length; ++index)
-                {
-                    var line = lines[index];
-                    var startIndex = line.IndexOf(MagicUncompressed, StringComparison.Ordinal);
-                    if (startIndex < 0)
-                        startIndex = line.IndexOf(MagicCompressed, StringComparison.Ordinal);
-                    if (startIndex < 0)
-                        startIndex = line.IndexOf(AppDataPaths.Headers.Save.Compressed, StringComparison.OrdinalIgnoreCase);
-                    if (startIndex <= -1) continue;
-                    headers = line[startIndex..].Split(';');
-                    header = headers.Length > 0 ? headers[0] : string.Empty;
-                    return index;
-                }
-
-                return -1; // Not found
-            }
         }
 
         public static KeyValuePair<eLoadReturnCode, List<PowerEntry?>?> MxDExtractAndLoadLight(Stream? inputStream, bool silent = true)
@@ -1271,29 +1219,63 @@ namespace Mids_Reborn.Core
                 return new KeyValuePair<eLoadReturnCode, List<PowerEntry?>?>(eLoadReturnCode.Failure, null);
             }
 
-            var lines = data.Split('\n');
-            string[] headers = { "ABCD", "0", "0", "0" };
-            var header = "";
-            var dataIndex = FindDataIndex();
-
-            if (dataIndex < 0)
+            var bytes = ExtractDataChunk(data, out var error);
+            if (bytes == null)
             {
                 if (!silent)
                 {
-                    MessageBox.Show("Unable to locate data header - Magic Number not found!", "ExtractAndLoad Failed");
+                    MessageBox.Show(error, "ExtractAndLoad Failed");
                 }
                 
                 return new KeyValuePair<eLoadReturnCode, List<PowerEntry?>?>(eLoadReturnCode.Failure, null);
             }
 
+            var buildReaderRet= MxDReadSaveDataLight(ref bytes);
+
+            return buildReaderRet == null
+                ? new KeyValuePair<eLoadReturnCode, List<PowerEntry?>?>(eLoadReturnCode.Failure, null)
+                : new KeyValuePair<eLoadReturnCode, List<PowerEntry?>?>(eLoadReturnCode.Success, buildReaderRet);
+        }
+
+        /// <summary>
+        /// Finds the data chunk header (magic;uncompressed size;compressed size;encoded size;encoding) and returns its decoded payload.
+        /// Returns null and an error message for a missing or malformed header or payload.
+        /// </summary>
+        private static byte[]? ExtractDataChunk(string data, out string error)
+        {
+            var lines = data.Split('\n');
+            var headers = Array.Empty<string>();
+            var dataIndex = -1;
+            for (var index = 0; index < lines.Length; index++)
+            {
+                var line = lines[index];
+                var startIndex = line.IndexOf(MagicUncompressed, StringComparison.Ordinal);
+                if (startIndex < 0)
+                    startIndex = line.IndexOf(MagicCompressed, StringComparison.Ordinal);
+                if (startIndex < 0)
+                    startIndex = line.IndexOf(AppDataPaths.Headers.Save.Compressed, StringComparison.OrdinalIgnoreCase);
+                if (startIndex <= -1) continue;
+                headers = line[startIndex..].Split(';');
+                dataIndex = index;
+                break;
+            }
+
+            if (dataIndex < 0)
+            {
+                error = "Unable to locate data header - Magic Number not found!";
+                return null;
+            }
+
             if (lines.Length <= dataIndex + 1)
             {
-                if (!silent)
-                {
-                    MessageBox.Show("Unable to locate data - Nothing beyond header!", "ExtractAndLoad Failed");
-                }
-                
-                return new KeyValuePair<eLoadReturnCode, List<PowerEntry?>?>(eLoadReturnCode.Failure, null);
+                error = "Unable to locate data - Nothing beyond header!";
+                return null;
+            }
+
+            if (headers.Length < 4 || !int.TryParse(headers[3], out var encodedSize) || encodedSize < 0)
+            {
+                error = "Unable to read data header - Invalid size information.";
+                return null;
             }
 
             var payload = string.Join("\n", lines[(dataIndex + 1)..]);
@@ -1303,66 +1285,48 @@ namespace Mids_Reborn.Core
                     ? ModernZlib.UnbreakHex(payload)
                     : ModernZlib.UnbreakString(payload, true));
 
-            if (bytes.Length < Convert.ToInt32(headers[3]))
+            if (bytes.Length < encodedSize)
             {
-                if (!silent)
-                {
-                    MessageBox.Show("Data chunk was incomplete! Check that the entire chunk was copied to the clipboard.", "ExtractAndLoad Failed");
-                }
-                
-                return new KeyValuePair<eLoadReturnCode, List<PowerEntry?>?>(eLoadReturnCode.Failure, null);
+                error = "Data chunk was incomplete! Check that the entire chunk was copied to the clipboard.";
+                return null;
             }
 
-            if (bytes.Length > Convert.ToInt32(headers[3]))
+            if (bytes.Length > encodedSize)
             {
-                Array.Resize(ref bytes, Convert.ToInt32(headers[3]));
+                Array.Resize(ref bytes, encodedSize);
             }
 
-            bytes = isHex ? ModernZlib.HexDecodeBytes(bytes) : ModernZlib.UuDecodeBytes(bytes);
+            try
+            {
+                bytes = isHex ? ModernZlib.HexDecodeBytes(bytes) : ModernZlib.UuDecodeBytes(bytes);
+            }
+            catch (Exception ex)
+            {
+                error = $"Unable to decode data - {ex.Message}";
+                return null;
+            }
 
             if (bytes.Length == 0)
             {
-                return new KeyValuePair<eLoadReturnCode, List<PowerEntry?>?>(eLoadReturnCode.Failure, null);
+                error = "Unable to decode data - No data found.";
+                return null;
             }
 
-            if (header == MagicCompressed)
+            if (headers[0] == MagicCompressed)
             {
                 try
                 {
                     bytes = ModernZlib.DecompressChunk(bytes, Convert.ToInt32(headers[1]));
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    return new KeyValuePair<eLoadReturnCode, List<PowerEntry?>?>(eLoadReturnCode.Failure, null);
+                    error = $"Unable to decompress data - {ex.Message}";
+                    return null;
                 }
             }
 
-            var buildReaderRet= MxDReadSaveDataLight(ref bytes);
-
-            return buildReaderRet == null
-                ? new KeyValuePair<eLoadReturnCode, List<PowerEntry?>?>(eLoadReturnCode.Failure, null)
-                : new KeyValuePair<eLoadReturnCode, List<PowerEntry?>?>(eLoadReturnCode.Success, buildReaderRet);
-
-            // Local function to find the data index
-            int FindDataIndex()
-            {
-                for (var index = 0; index < lines.Length; index++)
-                {
-                    var line = lines[index];
-                    var startIndex = line.IndexOf(MagicUncompressed, StringComparison.Ordinal);
-                    if (startIndex < 0)
-                        startIndex = line.IndexOf(MagicCompressed, StringComparison.Ordinal);
-                    if (startIndex < 0)
-                        startIndex = line.IndexOf(AppDataPaths.Headers.Save.Compressed, StringComparison.OrdinalIgnoreCase);
-                    if (startIndex <= -1) continue;
-                    headers = line[startIndex..].Split(';');
-                    header = headers.Length > 0 ? headers[0] : string.Empty;
-                    
-                    return index;
-                }
-
-                return -1; // Not found
-            }
+            error = string.Empty;
+            return bytes;
         }
 
         private static void WriteSlotData(ref BinaryWriter writer, ref I9Slot? slot)

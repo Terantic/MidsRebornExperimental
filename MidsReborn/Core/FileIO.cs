@@ -164,5 +164,30 @@ namespace Mids_Reborn.Core
                 str = null;
             return str;
         }
+
+        /// <summary>
+        /// Writes text as UTF-8 (no BOM) to a temporary file next to fileName, then moves it over fileName.
+        /// Throws on invalid text or a failed write, and fileName is left as it was.
+        /// </summary>
+        public static void WriteAllTextAtomic(string fileName, string contents)
+        {
+            var bytes = new UTF8Encoding(false, true).GetBytes(contents);
+            var tempFile = fileName + ".tmp";
+            try
+            {
+                using (var stream = new FileStream(tempFile, FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    stream.Write(bytes, 0, bytes.Length);
+                    stream.Flush(true);
+                }
+
+                File.Move(tempFile, fileName, true);
+            }
+            catch
+            {
+                if (File.Exists(tempFile)) File.Delete(tempFile);
+                throw;
+            }
+        }
     }
 }

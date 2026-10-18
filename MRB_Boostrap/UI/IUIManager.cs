@@ -11,6 +11,7 @@ public interface IUIManager
     void TriggerCancel();
     void TriggerRollback();
     void DisableCancel();
+    void EnableCancel();
     void StartCleanup();
     void Close();
 }

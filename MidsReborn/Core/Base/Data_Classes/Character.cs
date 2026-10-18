@@ -381,6 +381,7 @@ namespace Mids_Reborn.Core.Base.Data_Classes
         public void Reset(Archetype? iArchetype = null, int iOrigin = 0)
         {
             Name = string.Empty;
+            Comment = string.Empty;
             var flag1 = Archetype != null && iArchetype != null && Archetype.Idx == iArchetype.Idx;
             Archetype = iArchetype ?? DatabaseAPI.Database.Classes[0];
             MidsContext.Archetype = Archetype;
@@ -622,11 +623,7 @@ namespace Mids_Reborn.Core.Base.Data_Classes
                     }
                 }
 
-                if (!power.Power.HasAttribModEffects()) continue;
-                foreach (var effect in power.Power.Effects)
-                {
-                    effect.UpdateAttrib();
-                }
+                // ModifyAttrib changes are applied to each calculation's copy (ApplyModifyEffects), never to the shared database power
             }
 
             foreach (var power in CurrentBuild.Powers)
@@ -811,6 +808,8 @@ namespace Mids_Reborn.Core.Base.Data_Classes
             var tags = new List<string> {"comment", "enhobtained"};
 
             var metadata = MidsCharacterFileFormat.ReadMetadata(tags, buildText);
+            // A file without a comment tag has no description
+            Comment = string.Empty;
 
             foreach (var tag in tags)
             {

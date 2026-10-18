@@ -1051,12 +1051,14 @@ namespace Mids_Reborn.UI.Forms.ImportExportItems
             }
             else
             {
-
+                var buildData = _buildManager.BuildData;
                 var result = await ShareGenerator.SubmitOrUpdateBuild();
                 if (result.IsSuccessful)
                 {
                     toolStripStatusLabel1.Text = result.Message;
                     if (result.Data == null) return;
+                    // The build is now this new share; later updates must go to it, not to the share it was opened from
+                    if (buildData != null) buildData.Id = result.Data.Id;
                     txtId.Text = result.Data.Id;
                     txtDownloadUrl.Text = result.Data.DownloadUrl;
                     txtImageUrl.Text = result.Data.ImageUrl;
@@ -1089,7 +1091,8 @@ namespace Mids_Reborn.UI.Forms.ImportExportItems
         private async void IbUpdateButton_Click(object? sender, EventArgs e)
         {
             OperationResult<TransactionResult>? result;
-            if (_buildManager.BuildData?.Id is null)
+            var buildData = _buildManager.BuildData;
+            if (buildData?.Id is null)
             {
                 var inputResult = InputBox.Show("Enter the id of the build you wish to update.", "Build Update", false, "New Group", InputBox.InputBoxIcon.Info, InputBox_Validating);
                 if (!inputResult.OK) return;
@@ -1097,12 +1100,13 @@ namespace Mids_Reborn.UI.Forms.ImportExportItems
             }
             else
             {
-                result = await ShareGenerator.SubmitOrUpdateBuild(_buildManager.BuildData?.Id);
+                result = await ShareGenerator.SubmitOrUpdateBuild(buildData.Id);
             }
             if (result.IsSuccessful)
             {
                 toolStripStatusLabel1.Text = result.Message;
                 if (result.Data == null) return;
+                if (buildData != null) buildData.Id = result.Data.Id;
                 txtId.Text = result.Data.Id;
                 txtDownloadUrl.Text = result.Data.DownloadUrl;
                 txtImageUrl.Text = result.Data.ImageUrl;

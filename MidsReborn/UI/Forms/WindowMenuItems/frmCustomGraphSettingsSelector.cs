@@ -122,35 +122,18 @@ namespace Mids_Reborn.UI.Forms.WindowMenuItems
         }
 
         // Explicit enum values offered for each graph; the combo box index maps directly into these arrays.
-        private static readonly Enums.eDamage[] DamageTypes =
-        [
-            Enums.eDamage.Smashing, Enums.eDamage.Lethal, Enums.eDamage.Fire, Enums.eDamage.Cold,
-            Enums.eDamage.Energy, Enums.eDamage.Negative, Enums.eDamage.Toxic, Enums.eDamage.Psionic
-        ];
+        // They're CustomGraphStat's lists, so the min/max/average modes summarize the same vectors.
+        private static Enums.eEffectType[] DebuffEffects => CustomGraphStat.DebuffEffectsList;
 
-        private static readonly Enums.eDamage[] DamagePositions = [Enums.eDamage.Melee, Enums.eDamage.Ranged, Enums.eDamage.AoE];
-
-        private static readonly Enums.eEffectType[] DebuffEffects =
-        [
-            Enums.eEffectType.Defense, Enums.eEffectType.Endurance, Enums.eEffectType.Recovery,
-            Enums.eEffectType.PerceptionRadius, Enums.eEffectType.ToHit, Enums.eEffectType.RechargeTime,
-            Enums.eEffectType.SpeedRunning, Enums.eEffectType.Regeneration
-        ];
-
-        private static readonly Enums.eMez[] MezTypes =
-        [
-            Enums.eMez.Held, Enums.eMez.Stunned, Enums.eMez.Sleep, Enums.eMez.Immobilized,
-            Enums.eMez.Knockback, Enums.eMez.Repel, Enums.eMez.Confused, Enums.eMez.Terrorized,
-            Enums.eMez.Taunt, Enums.eMez.Placate, Enums.eMez.Teleport
-        ];
+        private static Enums.eMez[] MezTypes => CustomGraphStat.MezList;
 
         private Enums.eDamage[] AvailableDamageVectors()
         {
             return Stat switch
             {
-                CustomGraphStat.eCustomGraphStat.Elusivity => [Enums.eDamage.None, .. DamageTypes, .. DamagePositions],
-                CustomGraphStat.eCustomGraphStat.Defense => [.. DamageTypes, .. DamagePositions],
-                _ => DamageTypes // Resistance
+                CustomGraphStat.eCustomGraphStat.Elusivity => CustomGraphStat.ElusivityVectors,
+                CustomGraphStat.eCustomGraphStat.Defense => CustomGraphStat.DefenseVectors,
+                _ => CustomGraphStat.ResistanceVectors
             };
         }
 

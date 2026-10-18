@@ -184,7 +184,6 @@ public sealed class PatchFlowManager : IPatchFlowManager
                 // STEP 8: Backup
                 _logger.LogInformation("Step 8: Creating backup.");
                 await _ui.ShowStatusAsync("Creating backup...", 500, true, cancellationToken);
-                Directory.CreateDirectory(backupPath);
 
                 bool backupOk = await _backupManager.CreateBackupAsync(installPath, backupPath, entry.Type, entry.Name,
                     cancellationToken);
